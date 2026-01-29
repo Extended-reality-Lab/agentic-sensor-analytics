@@ -127,35 +127,31 @@ def add_trace_entry(
 
 
 def get_execution_summary(state: AgentState) -> Dict[str, Any]:
-    """
-    Generate summary of execution from trace.
-    
-    Args:
-        state: Agent state with execution trace
-        
-    Returns:
-        Dictionary with execution summary
-    """
+    """Generate summary of execution from trace."""
     if not state.get('execution_trace'):
         return {}
     
+    unique_steps = set()
+    completed_steps = set()
+    failed_steps = set()
     total_duration = 0.0
-    steps_completed = 0
-    steps_failed = 0
     
     for entry in state['execution_trace']:
+        step_name = entry['step']
+        unique_steps.add(step_name)
+        
         if entry.get('duration_ms'):
             total_duration += entry['duration_ms']
         
         if entry['status'] == 'completed':
-            steps_completed += 1
+            completed_steps.add(step_name)
         elif entry['status'] == 'failed':
-            steps_failed += 1
+            failed_steps.add(step_name)
     
     return {
-        'total_steps': len(state['execution_trace']),
-        'steps_completed': steps_completed,
-        'steps_failed': steps_failed,
+        'total_steps': len(unique_steps),
+        'steps_completed': len(completed_steps),
+        'steps_failed': len(failed_steps),
         'total_duration_ms': total_duration,
         'success': state.get('success', False)
     }
