@@ -149,6 +149,9 @@ TASK SPECIFICATION:
 ANALYTICS RESULTS:
 {results}
 
+NODE:
+{task_spec["location"]}
+
 INSTRUCTIONS:
 Provide a clear, concise natural language explanation of the results.
 
@@ -160,7 +163,6 @@ GUIDELINES:
 5. Keep response to 2-3 sentences
 6. Do NOT hallucinate or add information not in the results
 7. Use natural, conversational language
-8. CRITICAL: Use the EXACT location from TASK SPECIFICATION
 
 Now explain the results above:
 """
