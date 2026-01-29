@@ -4,8 +4,9 @@ llm:
   # Model configuration
   model_name: "llama3.1:8b"
   
-  # Ollama server settings
+  # Ollama server settings - localhost for local development and ollama for docker
   base_url: "http://localhost:11434"
+  # base_url: "http://ollama:11434"
   
   # Generation parameters
   temperature: 0  # Low for consistency
