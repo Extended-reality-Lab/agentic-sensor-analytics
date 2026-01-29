@@ -2,6 +2,11 @@
 
 An agentic AI system for natural-language analytics of smart building sensor data.
 
+<div style="text-align: center;">
+  <img src="docs/assets/ui-example.png" alt="UI" width="800"/>
+</div>
+
+
 ## Overview
 
 This project enables users to query building sensor data using natural language questions. The system combines a local LLM for intent extraction with deterministic analytics tools to provide accurate, verifiable results.
