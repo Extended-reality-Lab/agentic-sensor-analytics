@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+    <sensors>
+        <sensor>
+            <sensorID>5001</sensorID>
+            <n>Temperature Sensor</n>
+            <sensorTypeName>Temperature</sensorTypeName>
+            <input>1</input>
+            <created>2019-05-15 11:00:00</created>
+            <modified>2025-01-20 09:00:00</modified>
+        </sensor>
+        <sensor>
+            <sensorID>5002</sensorID>
+            <n>Humidity Sensor</n>
+            <sensorTypeName>Relative Humidity</sensorTypeName>
+            <input>2</input>
+            <created>2019-05-15 11:05:00</created>
+            <modified>2025-01-20 09:05:00</modified>
+        </sensor>
+        <sensor>
+            <sensorID>5003</sensorID>
+            <n>CO2 Sensor</n>
+            <sensorTypeName>Carbon Dioxide</sensorTypeName>
+            <input>3</input>
+            <created>2019-05-15 11:10:00</created>
+            <modified>2025-01-20 09:10:00</modified>
+        </sensor>
+    </sensors>
+</response>

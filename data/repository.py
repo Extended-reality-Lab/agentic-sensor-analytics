@@ -387,7 +387,7 @@ class SensorDataRepository:
             return 'co2'
         elif any(kw in name_lower for kw in self.config.sensor_mapping.moisture_keywords):
             return 'moisture'
-        elif 'equation' in name_lower or 'strain' in name_lower:
+        elif 'equation' in name_lower or 'quadratic' in name_lower or 'strain' in name_lower:
             return 'strain'
         elif name_lower == 'unknown':
             return None

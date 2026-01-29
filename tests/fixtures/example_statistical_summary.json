@@ -1,0 +1,52 @@
+{
+  "statistical_summary_temperature": {
+    "description": "Expected statistical summary for temperature data",
+    "input_file": "temperature_node15_sample.csv",
+    "expected_result": {
+      "value": {
+        "count": 24,
+        "mean": 22.7875,
+        "std": 1.4127,
+        "min": 20.7,
+        "q1": 21.625,
+        "median": 22.7,
+        "q3": 24.125,
+        "max": 24.9,
+        "skewness": 0.0,
+        "kurtosis": -1.2
+      },
+      "unit": "°C",
+      "metadata": {
+        "operation": "summary"
+      },
+      "success": true
+    },
+    "tolerance": 0.1
+  },
+  
+  "statistical_summary_co2_with_outliers": {
+    "description": "Expected statistical summary for CO2 data with quality flags",
+    "input_file": "co2_with_quality_flags.csv",
+    "expected_result": {
+      "value": {
+        "count": 24,
+        "mean": 703.33,
+        "std": 300.0,
+        "min": 0.0,
+        "q1": 640.0,
+        "median": 705.0,
+        "q3": 862.5,
+        "max": 1520.0,
+        "skewness": 1.5,
+        "kurtosis": 3.0
+      },
+      "unit": "ppm",
+      "metadata": {
+        "operation": "summary"
+      },
+      "success": true
+    },
+    "tolerance": 50.0,
+    "note": "Higher tolerance due to outliers and missing data"
+  }
+}

@@ -3,7 +3,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# This should work after fixes:
 from llm import OllamaLLM, SystemContext
 from data import SensorDataRepository, LLMDataBridge
 from analytics import get_registry

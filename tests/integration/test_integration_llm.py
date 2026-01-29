@@ -73,7 +73,7 @@ def test_intent_extraction():
         # Create mock system context
         context = SystemContext(
             available_sensors=["temperature", "humidity", "co2", "energy", "occupancy"],
-            available_locations=["Room201", "Room202", "Room305", "FirstFloor", "BuildingA"],
+            available_locations=["Node12", "Node13", "Node14", "Node15", "Node16"],
             time_range=(
                 datetime(2025, 1, 1, tzinfo=timezone.utc),
                 datetime.now(timezone.utc) + timedelta(days=1)
@@ -82,9 +82,9 @@ def test_intent_extraction():
         
         # Test queries
         test_queries = [
-            "What was the average temperature in Room201 yesterday?",
-            "Compare humidity levels between Room201 and Room202 last week",
-            "Show me daily average humidity for FirstFloor over the past month"
+            "What was the average temperature in Node 15 yesterday?",
+            "Compare humidity levels between Node 14 and Node 15 last week",
+            "Show me daily average humidity for Node 15 over the past month"
         ]
         
         for i, query in enumerate(test_queries, 1):
@@ -128,7 +128,7 @@ def test_result_explanation():
         # Create mock system context
         context = SystemContext(
             available_sensors=["temperature"],
-            available_locations=["Room201"],
+            available_locations=["Node15"],
             time_range=(
                 datetime(2025, 1, 1, tzinfo=timezone.utc),
                 datetime.now(timezone.utc) + timedelta(days=1)
@@ -136,7 +136,7 @@ def test_result_explanation():
         )
         
         # Mock query and extraction
-        query = "What was the average temperature in Room201 yesterday?"
+        query = "What was the average temperature in Node15 yesterday?"
         task_spec = llm.extract_intent(query, context)
         
         # Mock analytics results
@@ -181,9 +181,9 @@ def test_error_explanation():
         except FileNotFoundError:
             llm = OllamaLLM(model_name="llama3.1:8b", temperature=0.1)
         
-        query = "What was the temperature in Room999 yesterday?"
+        query = "What was the temperature in Node100 yesterday?"
         errors = [
-            "Unknown location 'Room999'. Available locations include: Room201, Room202, Room305...",
+            "Unknown location 'Node100'. Available locations include: Node13, Node14, Node15...",
         ]
         
         explanation = llm.explain_error(query, errors)

@@ -1,0 +1,37 @@
+# UI Configuration
+# Smart Building Analytics - User Interface Settings
+
+# Page configuration
+page_title: "Smart Building Analytics"
+page_icon: "🏢"
+layout: "wide"  # Options: "centered", "wide"
+sidebar_state: "expanded"  # Options: "auto", "expanded", "collapsed"
+
+# Feature flags
+enable_execution_trace: true
+enable_export: true
+enable_download: true
+
+# Theme settings
+theme:
+  primary_color: "#1f77b4"
+  background_color: "#ffffff"
+  secondary_background_color: "#f0f2f6"
+  text_color: "#262730"
+  font: "sans serif"
+
+# Chat interface settings
+chat:
+  max_message_length: 2000
+  show_timestamps: true
+  enable_markdown: true
+  avatar_user: "👤"
+  avatar_assistant: "🤖"
+
+# Visualization settings
+visualization:
+  default_height: 400
+  default_width: null  # null = auto-width
+  template: "plotly_white"  # Options: plotly, plotly_white, plotly_dark, ggplot2, seaborn, simple_white
+  enable_animation: false
+  color_scheme: "blues"  # Options: blues, reds, greens, purples, etc.
