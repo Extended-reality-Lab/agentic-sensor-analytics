@@ -1,5 +1,5 @@
 """
-Core analytics tool implementations.
+Core analytics tool implementations - FIXED FOR VISUALIZATIONS.
 """
 
 import time
@@ -53,13 +53,23 @@ class TemporalMeanTool(AnalyticsTool):
                 execution_time_ms=(time.time() - start_time) * 1000
             )
         
+        # Prepare time series data for visualization
+        time_series = [
+            {
+                'timestamp': row['timestamp'].isoformat(),
+                'value': float(row['value'])
+            }
+            for _, row in data.iterrows()
+        ]
+        
         # Compute metadata: std dev, min, max, sample size
         metadata = {
             "operation": operation,
             "std_dev": float(data['value'].std()),
             "min": float(data['value'].min()),
             "max": float(data['value'].max()),
-            "sample_size": len(data)
+            "sample_size": len(data),
+            "time_series": time_series
         }
         
         # Return AnalyticsResult with statistics
@@ -128,6 +138,22 @@ class TemporalAggregationTool(AnalyticsTool):
             for ts, val in aggregated.items() if pd.notna(val)
         ]
         
+        # Prepare aggregated_data for visualization (with period labels)
+        aggregated_data = []
+        for ts, val in aggregated.items():
+            if pd.notna(val):
+                if aggregation_level == 'hourly':
+                    period_label = ts.strftime('%Y-%m-%d %H:%M')
+                elif aggregation_level == 'daily':
+                    period_label = ts.strftime('%Y-%m-%d')
+                else:  # weekly
+                    period_label = f"Week of {ts.strftime('%Y-%m-%d')}"
+                
+                aggregated_data.append({
+                    "period": period_label,
+                    "value": float(val)
+                })
+        
         # Calculate overall aggregate across entire period
         if operation == 'mean':
             overall_aggregate = data['value'].mean()
@@ -147,7 +173,8 @@ class TemporalAggregationTool(AnalyticsTool):
                 "aggregation_level": aggregation_level,
                 "operation": operation,
                 "num_periods": len(result_data),
-                "overall_aggregate": float(overall_aggregate)
+                "overall_aggregate": float(overall_aggregate),
+                "aggregated_data": aggregated_data
             },
             success=True,
             execution_time_ms=(time.time() - start_time) * 1000
@@ -182,6 +209,8 @@ class SpatialComparisonTool(AnalyticsTool):
         
         # Compute statistics for each location
         comparison_results = []
+        comparison_data = {}
+        
         for location in data['location'].unique():
             location_data = data[data['location'] == location]
             
@@ -205,6 +234,14 @@ class SpatialComparisonTool(AnalyticsTool):
                 "location": location,
                 "value": float(value)
             })
+            
+            # Add to comparison_data for visualization
+            comparison_data[location] = {
+                "mean": float(location_data['value'].mean()),
+                "min": float(location_data['value'].min()),
+                "max": float(location_data['value'].max()),
+                "std": float(location_data['value'].std())
+            }
         
         # Calculate relative differences and rankings
         comparison_results.sort(key=lambda x: x['value'], reverse=True)
@@ -222,7 +259,8 @@ class SpatialComparisonTool(AnalyticsTool):
             unit=data['unit'].iloc[0],
             metadata={
                 "operation": operation,
-                "num_locations": len(comparison_results)
+                "num_locations": len(comparison_results),
+                "comparison_data": comparison_data
             },
             success=True,
             execution_time_ms=(time.time() - start_time) * 1000
@@ -270,11 +308,24 @@ class StatisticalSummaryTool(AnalyticsTool):
             "kurtosis": float(stats.kurtosis(data['value'].dropna()))
         }
         
+        # Rename keys for app.py compatibility (it expects '25%', '75%', etc.)
+        statistics_for_viz = {
+            "min": summary["min"],
+            "25%": summary["q1"],
+            "mean": summary["mean"],
+            "median": summary["median"],
+            "75%": summary["q3"],
+            "max": summary["max"]
+        }
+        
         # Package all statistics into result metadata
         return AnalyticsResult(
             value=summary,
             unit=data['unit'].iloc[0],
-            metadata={"operation": "summary"},
+            metadata={
+                "operation": "summary",
+                "statistics": statistics_for_viz
+            },
             success=True,
             execution_time_ms=(time.time() - start_time) * 1000
         )

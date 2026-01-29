@@ -137,7 +137,7 @@ def display_sidebar():
         )
         
         # Clear conversation
-        if st.button("🗑️ Clear Conversation", use_container_width=True):
+        if st.button("🗑️ Clear Conversation", width='stretch'):
             st.session_state.messages = []
             st.session_state.conversation_history = []
             st.session_state.execution_traces = []
@@ -148,14 +148,14 @@ def display_sidebar():
         # Example queries
         st.subheader("Example Queries")
         examples = [
-            "What was the average temperature in Node 15 yesterday?",
+            "What was the temperature each day in node 15 last week?",
             "Compare humidity between Node 14 and Node 15 last week",
             "Show daily average humidity for Node 15 last week",
             "What is the maximum temperature recorded in Node 15 over the past year?",
         ]
         
         for example in examples:
-            if st.button(f"💡 {example[:40]}...", key=example, use_container_width=True):
+            if st.button(f"💡 {example[:40]}...", key=example, width='stretch'):
                 # Add example to chat input
                 st.session_state.example_query = example
 
@@ -335,7 +335,7 @@ def display_execution_trace(state: dict):
                         st.error(f"  Error: {details['error']}")
 
 
-def display_message(message: dict):
+def display_message(message: dict, message_index: int):
     """Display a chat message with appropriate formatting."""
     role = message['role']
     content = message['content']
@@ -345,7 +345,7 @@ def display_message(message: dict):
         
         # Display visualization if present
         if 'visualization' in message:
-            st.plotly_chart(message['visualization'], use_container_width=True)
+            st.plotly_chart(message['visualization'], width='stretch', key=f"viz_{message_index}")
         
         # Display execution trace if present
         if 'state' in message:
@@ -392,7 +392,7 @@ def process_query(query: str):
                     
                     # Display visualization
                     if visualization:
-                        st.plotly_chart(visualization, use_container_width=True)
+                        st.plotly_chart(visualization, width='stretch', key=f"viz_current")
                     
                     # Add to message history
                     message = {
@@ -446,8 +446,8 @@ def main():
     st.markdown("---")
     
     # Display conversation history
-    for message in st.session_state.messages:
-        display_message(message)
+    for idx, message in enumerate(st.session_state.messages):
+        display_message(message, idx)
     
     # Chat input
     query = st.chat_input("Ask about Peavy Hall sensor data...")

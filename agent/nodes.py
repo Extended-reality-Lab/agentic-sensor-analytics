@@ -241,7 +241,14 @@ class AgentNodes:
                 raise ValueError("No task specification available")
             
             # Get appropriate tool from registry
-            tool = self.registry.get_tool_by_operation(task_spec.operation.value)
+            if task_spec.intent_type.value == 'aggregation':
+                tool = self.registry.get_tool('temporal_aggregation')
+            elif task_spec.intent_type.value == 'comparison':
+                tool = self.registry.get_tool('spatial_comparison')
+            elif task_spec.operation.value == 'summary':
+                tool = self.registry.get_tool('statistical_summary')
+            else:
+                tool = self.registry.get_tool('temporal_mean')
             
             if tool is None:
                 raise ValueError(f"No tool found for operation: {task_spec.operation}")

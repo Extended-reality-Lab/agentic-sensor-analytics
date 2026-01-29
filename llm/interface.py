@@ -26,6 +26,7 @@ class Operation(str, Enum):
     SUM = "sum"
     STD = "std"
     COUNT = "count"
+    SUMMARY = "summary"
 
 
 class AggregationLevel(str, Enum):

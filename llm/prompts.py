@@ -8,27 +8,6 @@ from datetime import datetime, timedelta, timezone
 
 class PromptTemplates:
     """Centralized prompt templates for the LLM component."""
-    
-    @staticmethod
-    def get_intent_extraction_prompt(
-        user_query: str,
-        available_sensors: List[str],
-        available_locations: List[str],
-        time_range: tuple[datetime, datetime]
-    ) -> str:
-        """
-        Generate prompt for extracting structured task specification from natural language.
-        
-        Args:
-            user_query: The user's natural language query
-            available_sensors: List of valid sensor types in the system
-            available_locations: List of valid locations
-            time_range: Tuple of (earliest_datetime, latest_datetime) for available data
-            
-        Returns:
-            Formatted prompt string
-        """
-        current_date = datetime.now((timezone.utc))
         
     @staticmethod
     def get_intent_extraction_prompt(
@@ -75,36 +54,61 @@ class PromptTemplates:
     "location": "<single location string OR list of locations for comparison>",
     "start_time": "<ISO 8601 datetime>",
     "end_time": "<ISO 8601 datetime>",
-    "operation": "<mean|max|min|sum|std|count>",
+    "operation": "<mean|max|min|sum|std|count|summary>",
     "aggregation_level": "<hourly|daily|weekly|null>",
     "confidence": <0.0-1.0 confidence score>
     }}
 
-    INTENT TYPE SELECTION (choose ONE, apply these rules IN ORDER):
+    INTENT TYPE SELECTION - Follow these rules IN ORDER:
 
-    1. **comparison**: PRIORITY - Query mentions multiple locations OR asks to compare
-    - Keywords: "compare", "vs", "versus", "between", "which is", "difference"
-    - Examples: "Compare Node 11 vs Node 15", "Which is warmer, Room201 or Room202?"
-    - location: ["Node 11", "Node 15"]  // MUST be a list
-    - aggregation_level: null
+    **STEP 1: Check for COMPARISON**
+    If the query mentions TWO OR MORE locations OR uses comparison words:
+    - Keywords: "compare", "vs", "versus", "between", "difference between", "which"
+    - Examples: 
+      * "Compare Node 14 and Node 15" → comparison
+      * "Temperature between Node 11 vs Node 15" → comparison
+      * "Which is warmer, Node 1 or Node 2" → comparison
+    - Set: intent_type = "comparison"
+    - Set: location = ["Location1", "Location2"]  // MUST be a list with 2+ items
+    - Set: aggregation_level = null
 
-    2. **aggregation**: Query asks for GROUPED temporal data (breakdown by time period)
-    - Keywords: "daily", "hourly", "weekly", "by day", "by hour", "each day", "show breakdown"
-    - Examples: "Show DAILY temperature averages", "HOURLY trends"
-    - location: "Node 15"  // MUST be a string
-    - aggregation_level: "hourly" | "daily" | "weekly"
+    **STEP 2: Check for AGGREGATION**
+    If the query asks for time-grouped/broken-down data (NOT just a range):
+    - Keywords: "each day", "daily", "hourly", "weekly", "by day", "by hour", "per day", "breakdown", "day by day", "every day"
+    - Examples:
+      * "Temperature EACH DAY last week" → aggregation (daily)
+      * "Show HOURLY averages" → aggregation (hourly)
+      * "Daily breakdown of humidity" → aggregation (daily)
+      * "What was temperature each day" → aggregation (daily)
+    - Set: intent_type = "aggregation"
+    - Set: location = "Single Location"  // MUST be a string
+    - Set: aggregation_level = "hourly" | "daily" | "weekly"
 
-    3. **query**: Simple single-value statistic (use this if not comparison or aggregation)
-    - Examples: "Average temperature last week", "Max humidity yesterday"
-    - Returns: ONE number for the entire period
-    - location: "Node 15"  // MUST be a string
-    - aggregation_level: null
+    **STEP 3: Check for STATISTICAL SUMMARY**
+    If the query explicitly asks for statistics, summary, or distribution:
+    - Keywords: "statistical summary", "statistics", "stats", "summary", "distribution"
+    - Examples:
+      * "Give me a statistical summary" → triggers StatisticalSummaryTool
+      * "Show statistics for temperature" → triggers StatisticalSummaryTool
+    - Set: intent_type = "query"
+    - Set: operation = "summary"  // This routes to StatisticalSummaryTool
+    - Set: location = "Single Location"  // MUST be a string
+    - Set: aggregation_level = null
 
-    CRITICAL RULES:
-    - If query mentions TWO OR MORE locations → intent_type MUST be "comparison"
-    - If location is a LIST → intent_type MUST be "comparison"
-    - If intent_type is "comparison" → location MUST be a list
-    - If intent_type is "query" → location MUST be a single string
+    **STEP 4: DEFAULT to QUERY**
+    Simple single-value statistic over a time period:
+    - Examples:
+      * "Average temperature last week" → query (returns ONE number)
+      * "Max humidity yesterday" → query (returns ONE number)
+      * "Temperature in Node 15 last week" → query (returns ONE number)
+    - Set: intent_type = "query"
+    - Set: location = "Single Location"  // MUST be a string
+    - Set: aggregation_level = null
+
+    CRITICAL VALIDATION:
+    - comparison → location MUST be a list with 2+ items, aggregation_level = null
+    - aggregation → location MUST be a string, aggregation_level MUST be "hourly"|"daily"|"weekly"
+    - query → location MUST be a string, aggregation_level = null
 
     DATE PARSING RULES:
     - "yesterday" = previous day from current date (e.g., {(current_date - timedelta(days=1)).strftime('%Y-%m-%d')})
@@ -156,6 +160,7 @@ GUIDELINES:
 5. Keep response to 2-3 sentences
 6. Do NOT hallucinate or add information not in the results
 7. Use natural, conversational language
+8. CRITICAL: Use the EXACT location from TASK SPECIFICATION
 
 Now explain the results above:
 """
