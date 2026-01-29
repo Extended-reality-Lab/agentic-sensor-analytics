@@ -5,6 +5,9 @@ langgraph
 pandas
 scipy
 pydantic
+python-dotenv
+plotly
+pandas
 ollama
 requests
 pydantic
@@ -13,3 +16,4 @@ pytest
 pytest-asyncio
 python-dotenv
 PyYAML
+streamlit
