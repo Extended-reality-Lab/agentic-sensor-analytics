@@ -3,7 +3,7 @@
 An agentic AI system for natural-language analytics of smart building sensor data.
 
 <div style="text-align: center;">
-  <img src="docs/assets/ui-example.png" alt="UI" width="650"/>
+  <img src="docs/assets/ui-example.png" alt="UI" width="750"/>
 </div>
 
 
@@ -38,7 +38,7 @@ This separation ensures reliable computations while maintaining natural language
 - Ollama installed and running
 - Access to SMT Analytics API
 
-### Installation
+### Setup
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -49,6 +49,20 @@ pip install -r requirements.txt
 
 # Pull LLM model
 ollama pull llama3.1:8b
+
+# Run app
+streamlit run .\ui\app.py
+```
+
+OR
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd agentic-sensor-analytics
+
+# Docker - make sure Docker is running!
+docker compose up --build
 ```
 
 ### Configuration

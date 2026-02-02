@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+pytest.ini
+htmlcov/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+LICENSE
+docs/
+
+ollama_data/
+
+.env.example
+
+pytest.ini
+
+

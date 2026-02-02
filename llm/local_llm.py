@@ -7,6 +7,7 @@ import time
 from typing import Optional
 from pathlib import Path
 import ollama
+import os
 
 from .interface import (
     LLMInterface,
@@ -54,7 +55,13 @@ class OllamaLLM(LLMInterface):
         
         # Use provided values or fall back to config
         self.model_name = model_name or config.llm.model_name
-        self.base_url = base_url or config.llm.base_url
+
+        self.base_url = (
+            base_url or
+            os.getenv('OLLAMA_BASE_URL') or
+            config.llm.base_url
+        )
+
         self.temperature = temperature if temperature is not None else config.llm.temperature
         self.timeout = timeout or config.llm.timeout
         self.max_retries = max_retries or config.llm.max_retries
