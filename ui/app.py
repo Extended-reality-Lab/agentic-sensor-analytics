@@ -148,10 +148,10 @@ def display_sidebar():
         # Example queries
         st.subheader("Example Queries")
         examples = [
-            "What was the temperature each day in node 15 last week?",
-            "Compare humidity between Node 14 and Node 15 last week",
-            "Show daily average humidity for Node 15 last week",
-            "What is the maximum temperature recorded in Node 15 over the past year?",
+            "What was the temperature each day in Node 15 last week?",
+            "Compare temperature between Node 15 and Node 25 over the past week.",
+            "Show daily average humidity for Node 15 last week.",
+            "What was the maximum temperature recorded in Node 15 over the past year?",
         ]
         
         for example in examples:
@@ -441,7 +441,7 @@ def main():
     display_sidebar()
     
     # Main content area
-    st.title("💬 Smart Building Analytics")
+    st.title("Smart Building Analytics")
     st.markdown("Ask questions about Peavy Hall sensor data in natural language.")
     st.markdown("---")
     

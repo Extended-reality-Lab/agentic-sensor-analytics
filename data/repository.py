@@ -350,10 +350,8 @@ class SensorDataRepository:
             if sensor_location_readable.lower() == location.lower():
                 return sensor
             
-            if location.lower() in sensor_location_readable.lower():
-                return sensor
-            
-            if location.lower() in sensor.location.lower():
+            # Also check exact match against raw location
+            if sensor.location.lower() == location.lower():
                 return sensor
         
         return None

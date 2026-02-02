@@ -3,7 +3,7 @@
 An agentic AI system for natural-language analytics of smart building sensor data.
 
 <div style="text-align: center;">
-  <img src="docs/assets/ui-example.png" alt="UI" width="750"/>
+  <img src="docs/assets/ui-example.png" alt="UI" width="800"/>
 </div>
 
 
