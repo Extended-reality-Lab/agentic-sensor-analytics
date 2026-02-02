@@ -316,11 +316,30 @@ class AgentNodes:
             if not analytics_result:
                 raise ValueError("No analytics result to explain")
             
-            # Generate explanation using LLM
+            # Create a cleaned summary for the LLM (remove verbose data like time_series)
+            result_summary = {
+                'value': analytics_result.get('value'),
+                'unit': analytics_result.get('unit'),
+                'success': analytics_result.get('success'),
+                'execution_time_ms': analytics_result.get('execution_time_ms'),
+                'metadata': {}
+            }
+            
+            # Add only essential metadata (not the full time_series/aggregated_data)
+            original_metadata = analytics_result.get('metadata', {})
+            essential_keys = ['operation', 'sample_size', 'std_dev', 'min', 'max', 
+                            'num_periods', 'overall_aggregate', 'aggregation_level',
+                            'num_locations', 'count', 'mean', 'median', 'skewness', 'kurtosis']
+            
+            for key in essential_keys:
+                if key in original_metadata:
+                    result_summary['metadata'][key] = original_metadata[key]
+            
+            # Generate explanation using LLM with cleaned summary
             explanation = self.llm.explain_results(
                 state['user_query'],
                 task_spec,
-                [analytics_result]
+                [result_summary]
             )
             
             state['explanation'] = explanation
