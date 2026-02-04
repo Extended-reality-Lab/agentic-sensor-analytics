@@ -1,5 +1,6 @@
 """
 Prompt templates for LLM intent extraction and result explanation.
+UPDATED: Enhanced detection of "summary" keyword for statistical summaries.
 """
 
 from typing import List, Dict
@@ -28,97 +29,121 @@ class PromptTemplates:
         Returns:
             Formatted prompt string
         """
-        current_date = datetime.now((timezone.utc))
+        current_date = datetime.now(timezone.utc)
         
         prompt = f"""You are a task extraction assistant for a smart building analytics system. 
-    Your job is to convert natural language queries into structured JSON task specifications.
+Your job is to convert natural language queries into structured JSON task specifications.
 
-    Data available from: {time_range[0].strftime('%Y-%m-%d')} to {time_range[1].strftime('%Y-%m-%d')}
-    Current date: {current_date.strftime('%Y-%m-%d')}
+Data available from: {time_range[0].strftime('%Y-%m-%d')} to {time_range[1].strftime('%Y-%m-%d')}
+Current date: {current_date.strftime('%Y-%m-%d')}
 
-    AVAILABLE LOCATIONS:
-    {', '.join(available_locations)}
+AVAILABLE LOCATIONS:
+{', '.join(available_locations)}
 
-    AVAILABLE SENSOR TYPES:
-    {', '.join(available_sensors)}
+AVAILABLE SENSOR TYPES:
+{', '.join(available_sensors)}
 
-    USER QUERY:
-    {user_query}
+USER QUERY:
+{user_query}
 
-    INSTRUCTIONS:
-    Extract the following information and return ONLY valid JSON (no markdown, no explanations):
+INSTRUCTIONS:
+Extract the following information and return ONLY valid JSON (no markdown, no explanations):
 
-    {{
-    "intent_type": "<query|comparison|aggregation>",
-    "sensor_type": "<temperature|humidity|moisture|strain>",
-    "location": "<single location string OR list of locations for comparison>",
-    "start_time": "<ISO 8601 datetime>",
-    "end_time": "<ISO 8601 datetime>",
-    "operation": "<mean|max|min|sum|std|count|summary>",
-    "aggregation_level": "<hourly|daily|weekly|null>",
-    "confidence": <0.0-1.0 confidence score>
-    }}
+{{
+"intent_type": "<query|comparison|aggregation>",
+"sensor_type": "<temperature|humidity|moisture|strain>",
+"location": "<single location string OR list of locations for comparison>",
+"start_time": "<ISO 8601 datetime>",
+"end_time": "<ISO 8601 datetime>",
+"operation": "<mean|max|min|sum|std|count|summary>",
+"aggregation_level": "<hourly|daily|weekly|null>",
+"confidence": <0.0-1.0 confidence score>
+}}
 
-    INTENT TYPE SELECTION - Follow these rules IN ORDER:
+INTENT TYPE SELECTION - Follow these rules IN ORDER:
 
-    **STEP 1: Check for COMPARISON**
-    If the query mentions TWO OR MORE locations OR uses comparison words:
-    - Keywords: "compare", "vs", "versus", "between", "difference between", "which"
-    - Examples: 
-      * "Compare Node 14 and Node 15" → comparison
-      * "Temperature between Node 11 vs Node 15" → comparison
-      * "Which is warmer, Node 1 or Node 2" → comparison
-    - Set: intent_type = "comparison"
-    - Set: location = ["Location1", "Location2"]  // MUST be a list with 2+ items
-    - Set: aggregation_level = null
+**STEP 1: Check for STATISTICAL SUMMARY**
+If the query contains the word "summary" OR asks for comprehensive statistics:
+- Keywords: "summary", "summarize", "statistical summary", "statistics", "stats", "distribution", "overview", "comprehensive"
+- Examples:
+  * "Provide a SUMMARY of temperature" → operation = "summary"
+  * "Give me statistics for Node 15" → operation = "summary"
+  * "Show statistical summary" → operation = "summary"
+  * "What are the stats for humidity" → operation = "summary"
+  * "Comprehensive overview" → operation = "summary"
+- Set: intent_type = "query"
+- Set: operation = "summary"
+- Set: location = "Single Location"
+- Set: aggregation_level = null
+- IMPORTANT: "summary" = FULL STATISTICS (min, max, median, quartiles, std dev, skewness)
+- DO NOT confuse with "daily summary" or "breakdown" - those are aggregation!
 
-    **STEP 2: Check for AGGREGATION**
-    If the query asks for time-grouped/broken-down data (NOT just a range):
-    - Keywords: "each day", "daily", "hourly", "weekly", "by day", "by hour", "per day", "breakdown", "day by day", "every day"
-    - Examples:
-      * "Temperature EACH DAY last week" → aggregation (daily)
-      * "Show HOURLY averages" → aggregation (hourly)
-      * "Daily breakdown of humidity" → aggregation (daily)
-      * "What was temperature each day" → aggregation (daily)
-    - Set: intent_type = "aggregation"
-    - Set: location = "Single Location"  // MUST be a string
-    - Set: aggregation_level = "hourly" | "daily" | "weekly"
+**STEP 2: Check for COMPARISON**
+If the query mentions TWO OR MORE locations OR uses comparison words:
+- Keywords: "compare", "vs", "versus", "between", "difference between", "which"
+- Examples: 
+  * "Compare Node 14 and Node 15" → comparison
+  * "Temperature between Node 11 vs Node 15" → comparison
+  * "Which is warmer, Node 1 or Node 2" → comparison
+- Set: intent_type = "comparison"
+- Set: location = ["Location1", "Location2"]
+- Set: aggregation_level = null
 
-    **STEP 3: Check for STATISTICAL SUMMARY**
-    If the query explicitly asks for statistics, summary, or distribution:
-    - Keywords: "statistical summary", "statistics", "stats", "summary", "distribution"
-    - Examples:
-      * "Give me a statistical summary" → triggers StatisticalSummaryTool
-      * "Show statistics for temperature" → triggers StatisticalSummaryTool
-    - Set: intent_type = "query"
-    - Set: operation = "summary"  // This routes to StatisticalSummaryTool
-    - Set: location = "Single Location"  // MUST be a string
-    - Set: aggregation_level = null
+**STEP 3: Check for AGGREGATION**
+If the query asks for time-grouped/broken-down data (NOT just a range):
+- Keywords: "each day", "daily breakdown", "hourly", "weekly", "by day", "by hour", "per day", "day by day", "every day"
+- IMPORTANT: Must explicitly request time grouping (e.g., "EACH day", "BY hour")
+- Examples:
+  * "Temperature EACH DAY last week" → aggregation (daily)
+  * "Show HOURLY averages" → aggregation (hourly)
+  * "Daily BREAKDOWN of humidity" → aggregation (daily)
+  * "What was temperature EACH day" → aggregation (daily)
+  * "Give me BY DAY averages" → aggregation (daily)
+- Set: intent_type = "aggregation"
+- Set: location = "Single Location"
+- Set: aggregation_level = "hourly" | "daily" | "weekly"
+- NOTE: "summary" alone is NOT aggregation - it needs explicit time grouping words
 
-    **STEP 4: DEFAULT to QUERY**
-    Simple single-value statistic over a time period:
-    - Examples:
-      * "Average temperature last week" → query (returns ONE number)
-      * "Max humidity yesterday" → query (returns ONE number)
-      * "Temperature in Node 15 last week" → query (returns ONE number)
-    - Set: intent_type = "query"
-    - Set: location = "Single Location"  // MUST be a string
-    - Set: aggregation_level = null
+**STEP 4: DEFAULT to QUERY**
+Simple single-value statistic over a time period:
+- Examples:
+  * "Average temperature last week" → query (operation = "mean")
+  * "Max humidity yesterday" → query (operation = "max")
+  * "Temperature in Node 15 last week" → query (operation = "mean")
+- Set: intent_type = "query"
+- Set: location = "Single Location"  // MUST be a string
+- Set: aggregation_level = null
+- Set: operation based on keywords:
+  * "average", "avg" → operation = "mean"
+  * "maximum", "max", "highest" → operation = "max"
+  * "minimum", "min", "lowest" → operation = "min"
+  * Default (no specific keyword) → operation = "mean"
 
-    CRITICAL VALIDATION:
-    - comparison → location MUST be a list with 2+ items, aggregation_level = null
-    - aggregation → location MUST be a string, aggregation_level MUST be "hourly"|"daily"|"weekly"
-    - query → location MUST be a string, aggregation_level = null
+CRITICAL VALIDATION:
+- comparison → location MUST be a list with 2+ items, aggregation_level = null
+- aggregation → location MUST be a string, aggregation_level MUST be "hourly"|"daily"|"weekly"
+  * REQUIRES explicit time grouping words: "each day", "by hour", "daily breakdown"
+  * "summary" alone is NOT aggregation
+- query with operation="summary" → location MUST be a string, aggregation_level = null
+  * Triggered by "summary", "statistics", "stats" keywords
+  * Returns comprehensive statistics (NOT time-grouped data)
+- query (other operations) → location MUST be a string, aggregation_level = null
 
-    DATE PARSING RULES:
-    - "yesterday" = previous day from current date (e.g., {(current_date - timedelta(days=1)).strftime('%Y-%m-%d')})
-    - "last week" = past 7 days from current date (e.g., {(current_date - timedelta(days=7)).strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')})
-    - "past month" = past 30 days from current date (e.g., {(current_date - timedelta(days=30)).strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')})
-    - Always use {current_date.year} as the year for recent dates unless explicitly stated otherwise
-    - All times should be in ISO 8601 format with timezone (use 'T00:00:00+00:00' for start of day, 'T23:59:59+00:00' for end of day)
+KEYWORD PRIORITY:
+1. "summary" OR "statistics" → ALWAYS operation = "summary" (NEVER aggregation)
+2. "each day" OR "daily breakdown" OR "by hour" → aggregation
+3. "compare" OR "vs" → comparison
+4. "average" OR "max" OR "min" → query with that operation
 
-    Return ONLY the JSON object.
-    """
+DATE PARSING RULES:
+- "yesterday" = previous day from current date (e.g., {(current_date - timedelta(days=1)).strftime('%Y-%m-%d')})
+- "last week" = past 7 days from current date (e.g., {(current_date - timedelta(days=7)).strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')})
+- "past month" = past 30 days from current date (e.g., {(current_date - timedelta(days=30)).strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')})
+- Always use {current_date.year} as the year for recent dates unless explicitly stated otherwise
+- All times should be in ISO 8601 format with timezone (use 'T00:00:00+00:00' for start of day, 'T23:59:59+00:00' for end of day)
+
+Return ONLY the JSON object.
+"""
         return prompt
     
     @staticmethod
