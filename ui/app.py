@@ -28,6 +28,24 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+def get_sensors_by_node():
+    """
+    Get mapping of which sensors are available for each node.
+    
+    Returns:
+        Dictionary mapping location names to list of sensor types
+    """
+    if st.session_state.executor is None:
+        return {}
+    
+    try:
+        # Use the repository's built-in method
+        repository = st.session_state.executor.bridge.repository
+        return repository.get_sensors_by_node()
+
+    except Exception as e:
+        print(f"Error getting sensors by node: {e}")
+        return {}
 
 def initialize_session_state():
     """Initialize session state variables."""
@@ -102,12 +120,19 @@ def display_sidebar():
             def natural_sort_key(text):
                 return [int(c) if c.isdigit() else c.lower() for c in re.split('([0-9]+)', text)]
 
-            locations = context.get('available_locations', [])
-            locations = sorted(locations, key=natural_sort_key)
+            node_sensors = get_sensors_by_node()
 
+            # Locations that exist and have available
+            locations = [loc for loc in context.get('available_locations', []) if node_sensors.get(loc)]
+            locations = sorted(locations, key=natural_sort_key)
+            
             with st.expander("📡 Nodes", expanded=False):
                 for location in locations:
-                    st.text(f"• {location}")
+                    sensors = node_sensors.get(location)
+                    with st.expander(f"🔹 {location}", expanded=False):
+                        sensors = node_sensors.get(location, [])
+                        for sensor in sensors:
+                            st.text(f"  • {sensor.capitalize()}")
             
             # Time range 
             with st.expander("📅 Time Range", expanded=False):
@@ -148,10 +173,11 @@ def display_sidebar():
         # Example queries
         st.subheader("Example Queries")
         examples = [
-            "What was the temperature each day in Node 15 last week?",
-            "Compare temperature between Node 15 and Node 25 over the past week.",
-            "Show daily average humidity for Node 15 last week.",
-            "What was the maximum temperature recorded in Node 15 over the past year?",
+            "What was the temperature each day in Node 1 last week?",
+            "Compare humidity between Node 15 and Node 25 over the past week.",
+            "What was the average strain for Node 35 in June 2025?",
+            "What was the average humidity for Node 4 last week?",
+            "Provide a summary of moisture levels in Node 15 for the past month.",
         ]
         
         for example in examples:
