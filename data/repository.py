@@ -209,6 +209,39 @@ class SensorDataRepository:
         
         return sorted(list(locations))
     
+    def get_sensors_by_node(self) -> Dict[str, List[str]]:
+        """
+        Get mapping of which sensors are available for each node.
+        
+        Returns:
+            Dictionary mapping location names to list of sensor types
+            
+        Example:
+            {
+                'Node 15': ['temperature', 'humidity', 'co2'],
+                'Node 25': ['temperature', 'moisture']
+            }
+        """
+        self.connect()
+        
+        all_sensors = self._get_all_sensors()
+        
+        node_sensors = {}
+        for sensor in all_sensors:
+            # Get human-readable location
+            location = self._get_human_readable_location(sensor.location)
+            
+            # Get normalized sensor type
+            sensor_type = self._normalize_sensor_type(sensor.sensor_type)
+            
+            if sensor_type:
+                if location not in node_sensors:
+                    node_sensors[location] = set()
+                node_sensors[location].add(sensor_type)
+
+        # Convert sets to sorted lists
+        return {loc: sorted(list(sensors)) for loc, sensors in node_sensors.items()}
+
     def get_time_range(self) -> tuple[datetime, datetime]:
         """
         Get available time range for data.
@@ -226,7 +259,7 @@ class SensorDataRepository:
         latest = datetime.now(timezone.utc)
         
         return (earliest, latest)
-    
+                
     def validate_parameters(
         self,
         sensor_type: str,
