@@ -253,8 +253,9 @@ class OllamaLLM(LLMInterface):
         self,
         original_query: str,
         task_spec: TaskSpecification,
-        results: list[dict]
-    ) -> str:
+        results: list[dict],
+        stream: bool = False
+    ):
         """
         Convert analytics results into natural language explanation.
         
@@ -262,9 +263,11 @@ class OllamaLLM(LLMInterface):
             original_query: The user's original question
             task_spec: The structured task that was executed
             results: List of analytics results with metadata
+            stream: Whether to stream the response (returns generator if True)
             
         Returns:
-            Natural language explanation of the results
+            Natural language explanation string if stream=False,
+            or generator yielding chunks if stream=True
             
         Raises:
             LLMGenerationError: If explanation generation fails
@@ -279,12 +282,50 @@ class OllamaLLM(LLMInterface):
             results=results
         )
         
-        # Get explanation
+        # Build messages
+        messages = [{"role": "user", "content": prompt}]
+        
+        if stream:
+            # Return a generator that yields chunks
+            return self._stream_chat(messages)
+        else:
+            # Get complete explanation
+            try:
+                explanation = self._generate(prompt=prompt, stream=False)
+                return explanation.strip()
+            except LLMGenerationError as e:
+                raise LLMGenerationError(f"Failed to generate explanation: {e}")
+    
+    def _stream_chat(self, messages: list[dict]):
+        """
+        Internal generator method for streaming chat responses.
+        
+        Args:
+            messages: List of message dictionaries
+            
+        Yields:
+            String chunks from the streaming response
+            
+        Raises:
+            LLMGenerationError: If streaming fails
+        """
         try:
-            explanation = self._generate(prompt=prompt, stream=False)
-            return explanation.strip()
-        except LLMGenerationError as e:
-            raise LLMGenerationError(f"Failed to generate explanation: {e}")
+            response = self.client.chat(
+                model=self.model_name,
+                messages=messages,
+                options={
+                    "temperature": self.temperature,
+                    "num_predict": self.config.llm.max_tokens
+                },
+                stream=True
+            )
+            
+            for chunk in response:
+                if 'message' in chunk and 'content' in chunk['message']:
+                    yield chunk['message']['content']
+                    
+        except Exception as e:
+            raise LLMGenerationError(f"Failed to stream response: {e}")
     
     def explain_error(
         self,
