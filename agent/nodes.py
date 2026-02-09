@@ -296,19 +296,23 @@ class AgentNodes:
         
         return state
     
-    def generate_explanation(self, state: AgentState) -> AgentState:
+    def generate_explanation(self, state: AgentState, stream: bool = False) -> AgentState:
         """
         Node 5: Generate natural language explanation of results.
         
         Args:
             state: Current agent state
+            stream: Whether to stream the response (if True, stores generator in state)
             
         Returns:
             Updated state with explanation
         """
+
         start_time = time.time()
         add_trace_entry(state, 'generate_explanation', 'started', {})
-        
+
+        stream = state.get('use_streaming', True)
+                
         try:
             task_spec = state['task_spec']
             analytics_result = state.get('analytics_result')
@@ -335,21 +339,40 @@ class AgentNodes:
                 if key in original_metadata:
                     result_summary['metadata'][key] = original_metadata[key]
             
-            # Generate explanation using LLM with cleaned summary
-            explanation = self.llm.explain_results(
-                state['user_query'],
-                task_spec,
-                [result_summary]
-            )
-            
-            state['explanation'] = explanation
-            state['success'] = True
-            state['end_time'] = datetime.now()
-            
-            duration_ms = (time.time() - start_time) * 1000
-            add_trace_entry(state, 'generate_explanation', 'completed', {
-                'explanation_length': len(explanation)
-            }, duration_ms)
+            # Generate explanation using LLM
+            if stream:
+                # Store stream generator in state
+                explanation_generator = self.llm.explain_results(
+                    state['user_query'],
+                    task_spec,
+                    [result_summary],
+                    stream=True
+                )
+                state['explanation_stream'] = explanation_generator
+                state['success'] = True
+                state['end_time'] = datetime.now()
+                
+                duration_ms = (time.time() - start_time) * 1000
+                add_trace_entry(state, 'generate_explanation', 'completed', {
+                    'streaming': True
+                }, duration_ms)
+            else:
+                # Generate complete explanation
+                explanation = self.llm.explain_results(
+                    state['user_query'],
+                    task_spec,
+                    [result_summary],
+                    stream=False
+                )
+                
+                state['explanation'] = explanation
+                state['success'] = True
+                state['end_time'] = datetime.now()
+                
+                duration_ms = (time.time() - start_time) * 1000
+                add_trace_entry(state, 'generate_explanation', 'completed', {
+                    'explanation_length': len(explanation)
+                }, duration_ms)
         
         except LLMError as e:
             duration_ms = (time.time() - start_time) * 1000

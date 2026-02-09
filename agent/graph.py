@@ -193,12 +193,13 @@ class AgentExecutor:
         self.bridge = bridge
         self.graph = create_agent_graph(llm, repository, bridge)
     
-    def execute(self, user_query: str) -> AgentState:
+    def execute(self, user_query: str, stream: bool = True) -> AgentState:
         """
         Execute a user query through the agent workflow.
         
         Args:
             user_query: Natural language query from user
+            stream: Whether to stream the explanation response (default: False)
             
         Returns:
             Final agent state with results or errors
@@ -215,7 +216,7 @@ class AgentExecutor:
         from .state import create_initial_state
         
         # Create initial state
-        initial_state = create_initial_state(user_query)
+        initial_state = create_initial_state(user_query, use_streaming=stream)
         
         # Ensure repository is connected
         if not self.repository.api_client.authenticated:

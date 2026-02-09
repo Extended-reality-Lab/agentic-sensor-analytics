@@ -26,6 +26,7 @@ class AgentState(TypedDict, total=False):
         data: Retrieved sensor data as DataFrame
         analytics_result: Result from analytics tool execution
         explanation: Natural language explanation of results
+        explanation_stream: Generator for streaming explanation
         execution_trace: List of execution steps for debugging
         error_explanation: User-friendly error message
         success: Whether the workflow completed successfully
@@ -47,7 +48,9 @@ class AgentState(TypedDict, total=False):
     
     # Result generation
     explanation: Optional[str]
+    explanation_stream: Optional[Any]
     error_explanation: Optional[str]
+    use_streaming: bool
     
     # Workflow tracking
     execution_trace: List[Dict[str, Any]]
@@ -70,7 +73,7 @@ class ExecutionTrace(TypedDict):
     duration_ms: Optional[float]
 
 
-def create_initial_state(user_query: str) -> AgentState:
+def create_initial_state(user_query: str, use_streaming: bool = True) -> AgentState:
     """
     Create initial agent state from user query.
     
@@ -87,6 +90,8 @@ def create_initial_state(user_query: str) -> AgentState:
         data=None,
         analytics_result=None,
         explanation=None,
+        explanation_stream=None,
+        use_streaming=use_streaming,
         error_explanation=None,
         execution_trace=[],
         success=False,
