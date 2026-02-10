@@ -10,7 +10,7 @@ llm:
   
   # Generation parameters
   temperature: 0  # Low for consistency
-  max_tokens: 4096
+  max_tokens: 512
   
   # Reliability settings
   timeout: 5  # seconds
