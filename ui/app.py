@@ -394,8 +394,7 @@ def process_query(query: str):
     with st.chat_message("assistant"):
         with st.spinner("Processing query..."):
             try:
-                # Execute query
-                result = st.session_state.executor.execute(query)
+                result = st.session_state.executor.execute(query, stream=True)
                 
                 # Store in history
                 st.session_state.conversation_history.append(result)
@@ -403,7 +402,13 @@ def process_query(query: str):
                 
                 # Determine response content
                 if result.get('success'):
-                    response_content = result.get('explanation', 'Query processed successfully.')
+                    # Check if there is a streaming response
+                    if 'explanation_stream' in result and result['explanation_stream'] is not None:
+                        response_content = st.write_stream(result['explanation_stream'])
+                    else:
+                        # Fallback to regular explanation
+                        response_content = result.get('explanation', 'Query processed successfully.')
+                        st.markdown(response_content)
                     
                     # Create visualization if analytics result available
                     visualization = None
@@ -412,9 +417,6 @@ def process_query(query: str):
                             result['analytics_result'],
                             result['task_spec']
                         )
-                    
-                    # Display explanation
-                    st.markdown(response_content)
                     
                     # Display visualization
                     if visualization:
