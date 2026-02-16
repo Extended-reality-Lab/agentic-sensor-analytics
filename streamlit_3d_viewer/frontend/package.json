@@ -21,7 +21,8 @@
     "@types/three": "^0.160.0"
   },
   "eslintConfig": {
-    "extends": ["react-app"]
+    "extends": ["react-app"],
+    "ignorePatterns": ["node_modules/@mediapipe/**"]
   },
   "browserslist": {
     "production": [">0.2%", "not dead", "not op_mini all"],
