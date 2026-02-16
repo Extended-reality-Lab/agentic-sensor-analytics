@@ -1,6 +1,7 @@
 """
 Prompt templates for LLM intent extraction and result explanation.
 UPDATED: Enhanced detection of "summary" keyword for statistical summaries.
+UPDATED: Added selected_node context support for 3D viewer integration.
 """
 
 from typing import List, Dict
@@ -15,7 +16,8 @@ class PromptTemplates:
         user_query: str,
         available_sensors: List[str],
         available_locations: List[str],
-        time_range: tuple[datetime, datetime]
+        time_range: tuple[datetime, datetime],
+        selected_node: str = None
     ) -> str:
         """
         Generate prompt for extracting structured task specification from natural language.
@@ -25,11 +27,29 @@ class PromptTemplates:
             available_sensors: List of valid sensor types in the system
             available_locations: List of valid locations
             time_range: Tuple of (earliest_datetime, latest_datetime) for available data
+            selected_node: Currently selected node in 3D viewer (optional)
             
         Returns:
             Formatted prompt string
         """
         current_date = datetime.now(timezone.utc)
+        
+        # Add selected node context if available
+        selected_node_context = ""
+        if selected_node:
+            selected_node_context = f"""
+SELECTED NODE CONTEXT:
+The user has currently selected: {selected_node}
+
+IMPORTANT LOCATION RULES:
+- If the user's query does NOT explicitly mention a location, use the selected node: {selected_node}
+- If the user explicitly mentions location(s), use those instead (ignore selected node)
+- Examples with {selected_node} selected:
+  * "average temperature yesterday" → location should be "{selected_node}"
+  * "show me humidity last week" → location should be "{selected_node}"
+  * "compare Node 1 and Node 5" → location should be ["Node 1", "Node 5"] (explicit, ignore selected)
+  * "temperature in Node 10" → location should be "Node 10" (explicit, ignore selected)
+"""
         
         prompt = f"""You are a task extraction assistant for a smart building analytics system. 
 Your job is to convert natural language queries into structured JSON task specifications.
@@ -42,7 +62,7 @@ AVAILABLE LOCATIONS:
 
 AVAILABLE SENSOR TYPES:
 {', '.join(available_sensors)}
-
+{selected_node_context}
 USER QUERY:
 {user_query}
 
