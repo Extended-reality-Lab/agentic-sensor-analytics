@@ -161,7 +161,8 @@ class OllamaLLM(LLMInterface):
     def extract_intent(
         self,
         user_query: str,
-        system_context: SystemContext
+        system_context: SystemContext,
+        selected_node: str = None 
     ) -> TaskSpecification:
         """
         Extract structured task specification from natural language query.
@@ -183,7 +184,8 @@ class OllamaLLM(LLMInterface):
             user_query=user_query,
             available_sensors=system_context.available_sensors,
             available_locations=system_context.available_locations,
-            time_range=system_context.time_range
+            time_range=system_context.time_range,
+            selected_node=selected_node
         )
         
         messages = [
