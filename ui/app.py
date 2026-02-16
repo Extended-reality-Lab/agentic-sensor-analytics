@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import re
+import json
 from typing import Optional
 import sys
 from pathlib import Path
@@ -18,6 +19,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agent import AgentExecutor, get_execution_summary
 from llm import SystemContext
+
+# Import 3D viewer component
+try:
+    from streamlit_3d_viewer import building_3d_viewer
+    VIEWER_AVAILABLE = True
+except ImportError:
+    VIEWER_AVAILABLE = False
+    print("Warning: 3D viewer component not available")
 
 
 # Page configuration
@@ -47,6 +56,25 @@ def get_sensors_by_node():
         print(f"Error getting sensors by node: {e}")
         return {}
 
+def load_node_positions():
+    """
+    Load node position data for 3D visualization.
+    
+    Returns:
+        Dictionary mapping node IDs to position data
+    """
+    config_path = Path(__file__).parent.parent / 'config' / 'node_positions.json'
+    
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        st.warning("node_positions.json not found. 3D view will use default positions.")
+        return {}
+    except json.JSONDecodeError as e:
+        st.error(f"Error parsing node_positions.json: {e}")
+        return {}
+
 def initialize_session_state():
     """Initialize session state variables."""
     if 'messages' not in st.session_state:
@@ -66,6 +94,16 @@ def initialize_session_state():
     
     if 'system_context' not in st.session_state:
         st.session_state.system_context = None
+    
+    # 3D viewer settings
+    if 'show_3d_view' not in st.session_state:
+        st.session_state.show_3d_view = False
+    
+    if 'active_node' not in st.session_state:
+        st.session_state.active_node = None
+    
+    if 'node_positions' not in st.session_state:
+        st.session_state.node_positions = None
 
 
 def initialize_executor():
@@ -77,6 +115,9 @@ def initialize_executor():
                 
                 # Get system context for sidebar
                 st.session_state.system_context = st.session_state.executor.bridge.get_system_context()
+                
+                # Load node positions for 3D viewer
+                st.session_state.node_positions = load_node_positions()
                 
                 st.success("✓ Analytics engine initialized")
             except Exception as e:
@@ -155,6 +196,17 @@ def display_sidebar():
         
         # Settings
         st.subheader("Settings")
+        
+        # 3D Visualization toggle
+        if VIEWER_AVAILABLE:
+            st.session_state.show_3d_view = st.checkbox(
+                "🏢 3D Building View",
+                value=st.session_state.show_3d_view,
+                help="Display interactive 3D visualization of sensor locations"
+            )
+        else:
+            st.info("💡 3D viewer not available. Install component to enable.")
+        
         st.session_state.show_trace = st.checkbox(
             "Show execution trace",
             value=st.session_state.show_trace,
@@ -166,6 +218,7 @@ def display_sidebar():
             st.session_state.messages = []
             st.session_state.conversation_history = []
             st.session_state.execution_traces = []
+            st.session_state.active_node = None
             st.rerun()
         
         st.markdown("---")
@@ -222,17 +275,17 @@ def create_visualization(analytics_result: dict, task_spec) -> Optional[go.Figur
             
             return fig
         
-        # Aggregated time series (daily, hourly, etc.)
-        elif 'aggregated_data' in metadata:
+        # Aggregated time series
+        if 'aggregated_data' in metadata:
             df = pd.DataFrame(metadata['aggregated_data'])
             
             fig = px.bar(
                 df,
                 x='period',
                 y='value',
-                title=f"{task_spec.aggregation_level.title()} Average {task_spec.sensor_type.title()} - {task_spec.location}",
+                title=f"{task_spec.sensor_type.title()} - {metadata.get('aggregation_level', '').title()} Aggregation",
                 labels={'value': f'{task_spec.sensor_type.title()} ({analytics_result.get("unit", "")})',
-                       'period': 'Period'}
+                       'period': 'Time Period'}
             )
             
             fig.update_layout(
@@ -242,34 +295,35 @@ def create_visualization(analytics_result: dict, task_spec) -> Optional[go.Figur
             
             return fig
         
-        # Spatial comparison
-        elif 'comparison_data' in metadata:
-            comp_data = metadata['comparison_data']
+        # Comparison visualization
+        if 'comparison_data' in metadata:
+            locations = list(metadata['comparison_data'].keys())
+            means = [metadata['comparison_data'][loc]['mean'] for loc in locations]
             
-            locations = list(comp_data.keys())
-            values = [comp_data[loc]['mean'] for loc in locations]
-            
-            fig = px.bar(
-                x=locations,
-                y=values,
-                title=f"{task_spec.sensor_type.title()} Comparison",
-                labels={'x': 'Location', 'y': f'{task_spec.sensor_type.title()} ({analytics_result.get("unit", "")})'}
-            )
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=locations,
+                    y=means,
+                    text=[f"{m:.2f}" for m in means],
+                    textposition='auto',
+                )
+            ])
             
             fig.update_layout(
+                title=f"{task_spec.sensor_type.title()} Comparison Across Locations",
+                xaxis_title="Location",
+                yaxis_title=f'{task_spec.sensor_type.title()} ({analytics_result.get("unit", "")})',
                 template='plotly_white',
                 height=400
             )
             
             return fig
         
-        # Statistical summary visualization
-        elif operation == 'summary':
-            stats = metadata.get('statistics', {})
+        # Statistical summary
+        if 'statistics' in metadata:
+            stats = metadata['statistics']
             
-            # Create box plot representation
             fig = go.Figure()
-            
             fig.add_trace(go.Box(
                 y=[stats.get('min', 0), 
                    stats.get('25%', 0), 
@@ -378,8 +432,75 @@ def display_message(message: dict, message_index: int):
             display_execution_trace(message['state'])
 
 
+def display_3d_viewer():
+    """Display the 3D building visualization."""
+    if not VIEWER_AVAILABLE:
+        st.warning("⚠️ 3D viewer component not available")
+        return
+    
+    if not st.session_state.node_positions:
+        st.warning("⚠️ Node position data not available")
+        return
+    
+    st.subheader("🏢 Building Visualization")
+    
+    # Floor filter
+    floor_filter = st.selectbox(
+        "View Floor",
+        ["All Floors", "Floor 1", "Floor 2", "Floor 3"],
+        key="floor_filter"
+    )
+    
+    # Filter nodes by floor
+    filtered_nodes = st.session_state.node_positions.copy()
+    if floor_filter != "All Floors":
+        floor_num = int(floor_filter.split()[-1])
+        filtered_nodes = {
+            k: v for k, v in st.session_state.node_positions.items() 
+            if v.get('floor') == floor_num
+        }
+    
+    # Display 3D viewer
+    selected_node = building_3d_viewer(
+        node_positions=filtered_nodes,
+        model_url=None,  # Set to None to use procedural geometry
+        active_node=st.session_state.get('active_node'),
+        height=500,
+        key="main_viewer"
+    )
+    
+    # Reset button below 3D viewer
+    if st.button("🔄 Reset View", width='stretch'):
+        st.session_state.active_node = None
+        st.rerun()
+    
+    # Handle node selection
+    if selected_node and selected_node != st.session_state.active_node:
+        st.session_state.active_node = selected_node
+        st.rerun()
+    
+    # Display selected node info
+    if st.session_state.active_node:
+        node_id = st.session_state.active_node
+        node_data = st.session_state.node_positions.get(node_id, {})
+        
+        with st.expander("📍 Selected Node", expanded=True):
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Node", node_id)
+            with col2:
+                st.metric("Room", node_data.get('room', 'Unknown'))
+            with col3:
+                st.metric("Floor", node_data.get('floor', 'Unknown'))
+            
+            st.write("**Available Sensors:**", ", ".join(node_data.get('sensor_types', [])))
+
+
 def process_query(query: str):
     """Process user query and update chat."""
+    # Get selected node from session state for context
+    selected_node = st.session_state.get('active_node', None)
+    
     # Add user message
     st.session_state.messages.append({
         'role': 'user',
@@ -394,7 +515,12 @@ def process_query(query: str):
     with st.chat_message("assistant"):
         with st.spinner("Processing query..."):
             try:
-                result = st.session_state.executor.execute(query, stream=True)
+                # Pass selected_node as context to executor
+                result = st.session_state.executor.execute(
+                    query, 
+                    selected_node=selected_node,
+                    stream=True
+                )
                 
                 # Store in history
                 st.session_state.conversation_history.append(result)
@@ -409,6 +535,14 @@ def process_query(query: str):
                         # Fallback to regular explanation
                         response_content = result.get('explanation', 'Query processed successfully.')
                         st.markdown(response_content)
+                    
+                    # Highlight node in 3D view if applicable
+                    if st.session_state.show_3d_view and result.get('task_spec'):
+                        task_spec = result['task_spec']
+                        location = task_spec.location
+                        # Update active node if it's a single location query
+                        if isinstance(location, str) and location in st.session_state.node_positions:
+                            st.session_state.active_node = location
                     
                     # Create visualization if analytics result available
                     visualization = None
@@ -473,22 +607,60 @@ def main():
     st.markdown("Ask questions about Peavy Hall sensor data in natural language.")
     st.markdown("---")
     
-    # Display conversation history
-    for idx, message in enumerate(st.session_state.messages):
-        display_message(message, idx)
-    
-    # Chat input
-    query = st.chat_input("Ask about Peavy Hall sensor data...")
-    
-    # Handle example query from sidebar
-    if 'example_query' in st.session_state:
-        query = st.session_state.example_query
-        del st.session_state.example_query
-    
-    # Process query
-    if query:
-        process_query(query)
-        st.rerun()
+    # Layout: 3D view on left, chat on right (if 3D enabled)
+    if st.session_state.show_3d_view and VIEWER_AVAILABLE:
+        col_3d, col_chat = st.columns([3, 2])
+        
+        with col_3d:
+            display_3d_viewer()
+        
+        with col_chat:
+            st.subheader("💬 Query Interface")
+            
+            # Fixed-height scrollable chat container (matches 3D viewer height)
+            # Use container with fixed height for messages
+            with st.container(height=650):
+                # Display conversation history
+                for idx, message in enumerate(st.session_state.messages):
+                    display_message(message, idx)
+            
+                # Process query INSIDE container so it renders there
+                if 'current_query' in st.session_state:
+                    query = st.session_state.current_query
+                    del st.session_state.current_query
+                    process_query(query)
+                    st.rerun()
+            
+            # Chat input AFTER container - appears below chat box
+            query = st.chat_input("Ask about sensor data...")
+            
+            # Handle example query from sidebar or 3D selection
+            if 'example_query' in st.session_state:
+                query = st.session_state.example_query
+                del st.session_state.example_query
+            
+            # Store query to process on next render (inside container)
+            if query:
+                st.session_state.current_query = query
+                st.rerun()
+    else:
+        # Full-width chat interface (original layout)
+        # Display conversation history
+        for idx, message in enumerate(st.session_state.messages):
+            display_message(message, idx)
+        
+        # Chat input
+        query = st.chat_input("Ask about Peavy Hall sensor data...")
+        
+        # Handle example query from sidebar
+        if 'example_query' in st.session_state:
+            query = st.session_state.example_query
+            del st.session_state.example_query
+        
+        # Process query
+        if query:
+            process_query(query)
+            st.rerun()
 
 
 if __name__ == "__main__":
