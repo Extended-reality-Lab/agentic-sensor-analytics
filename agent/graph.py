@@ -193,7 +193,7 @@ class AgentExecutor:
         self.bridge = bridge
         self.graph = create_agent_graph(llm, repository, bridge)
     
-    def execute(self, user_query: str, stream: bool = True) -> AgentState:
+    def execute(self, user_query: str, selected_node: str = None, stream: bool = True) -> AgentState:
         """
         Execute a user query through the agent workflow.
         
@@ -217,6 +217,7 @@ class AgentExecutor:
         
         # Create initial state
         initial_state = create_initial_state(user_query, use_streaming=stream)
+        initial_state['selected_node'] = selected_node
         
         # Ensure repository is connected
         if not self.repository.api_client.authenticated:

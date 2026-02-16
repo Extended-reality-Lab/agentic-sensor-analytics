@@ -60,6 +60,8 @@ class AgentState(TypedDict, total=False):
     start_time: Optional[datetime]
     end_time: Optional[datetime]
 
+    selected_node: Optional[str]
+
 
 class ExecutionTrace(TypedDict):
     """

@@ -64,7 +64,8 @@ class AgentNodes:
             context = SystemContext(**context_dict)
             
             # Extract intent using LLM
-            task_spec = self.llm.extract_intent(state['user_query'], context)
+            selected_node = state.get('selected_node')
+            task_spec = self.llm.extract_intent(state['user_query'], context, selected_node)
             
             # Update state
             state['task_spec'] = task_spec
