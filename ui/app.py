@@ -229,7 +229,8 @@ def display_sidebar():
             "What was the temperature each day in Node 1 last week?",
             "Compare humidity between Node 15 and Node 25 over the past week.",
             "What was the average strain for Node 35 in June 2025?",
-            "What was the average humidity for Node 4 last week?",
+            "What was the average humidity for Node 4 last month?",
+            "What was the highest moisture level recorded in Node 17 over the past year?",
             "Provide a summary of moisture levels in Node 15 for the past month.",
         ]
         
@@ -463,7 +464,7 @@ def display_3d_viewer():
     # Display 3D viewer
     selected_node = building_3d_viewer(
         node_positions=filtered_nodes,
-        model_url=None,  # Set to None to use procedural geometry
+        model_url=None,
         active_node=st.session_state.get('active_node'),
         height=500,
         key="main_viewer"

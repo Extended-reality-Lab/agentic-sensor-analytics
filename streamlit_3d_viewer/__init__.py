@@ -1,12 +1,12 @@
 import streamlit.components.v1 as components
 import os
 
-_RELEASE = False
+_RELEASE = os.environ.get("STREAMLIT_3D_VIEWER_RELEASE", "false").lower() == "true"
 
 if not _RELEASE:
     _component_func = components.declare_component(
         "building_3d_viewer",
-        url="http://localhost:3000",
+        url=os.environ.get("STREAMLIT_3D_VIEWER_URL", "http://localhost:3000"),
     )
 else:
     parent_dir = os.path.dirname(os.path.abspath(__file__))

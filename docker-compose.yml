@@ -22,7 +22,6 @@ services:
     container_name: ollama-puller
     volumes:
       - ollama_data:/root/.ollama
-      # Mount the config file so we can read the model name
       - ./config/llm_config.yaml:/llm_config.yaml:ro
     entrypoint: /bin/sh
     command: >
@@ -34,7 +33,7 @@ services:
         sleep 3;
       done;
       echo "Ollama is ready!";
-      MODEL=$$(grep "model_name:" /llm_config.yaml | sed "s/.*model_name: *[\"'\'']*//;s/[\"'\''].*//");
+      MODEL=$$(grep "model_name:" /llm_config.yaml | sed "s/.*model_name: *[\"'\'']*//;s/[\"'\'']*$//");
       echo "Config file requests model: $$MODEL";
       if [ -n "$$MODEL" ]; then
         echo "Pulling model: $$MODEL";
@@ -50,6 +49,29 @@ services:
     depends_on:
       - ollama
 
+  # React/Node frontend for the 3D building viewer component
+  frontend:
+    image: node:18-alpine
+    container_name: smart-building-frontend
+    working_dir: /app
+    volumes:
+      - ./streamlit_3d_viewer/frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "npm install && npm start"
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - BROWSER=none
+      - CI=false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
   # Streamlit application
   app:
     build:
@@ -60,6 +82,7 @@ services:
       - "8501:8501"
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
+      - STREAMLIT_3D_VIEWER_URL=http://localhost:3000
       - PYTHONUNBUFFERED=1
     volumes:
       - ./config:/app/config
@@ -68,6 +91,8 @@ services:
     depends_on:
       ollama-puller:
         condition: service_completed_successfully
+      frontend:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
@@ -77,6 +102,8 @@ services:
 
 volumes:
   ollama_data:
+    driver: local
+  frontend_node_modules:
     driver: local
 
 networks:
