@@ -464,7 +464,7 @@ def display_3d_viewer():
     # Display 3D viewer
     selected_node = building_3d_viewer(
         node_positions=filtered_nodes,
-        model_url=None,
+        model_url="./peavy_hall.glb",
         active_node=st.session_state.get('active_node'),
         height=500,
         key="main_viewer"
@@ -476,7 +476,8 @@ def display_3d_viewer():
         st.rerun()
     
     # Handle node selection
-    if selected_node and selected_node != st.session_state.active_node:
+    valid_nodes = st.session_state.node_positions or {}
+    if selected_node and selected_node in valid_nodes and selected_node != st.session_state.active_node:
         st.session_state.active_node = selected_node
         st.rerun()
     

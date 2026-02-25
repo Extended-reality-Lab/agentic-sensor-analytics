@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { Streamlit, withStreamlitConnection } from 'streamlit-component-lib';
 import Building3DViewer from './Building3DViewer';
 
@@ -29,9 +29,9 @@ function StreamlitComponent(props) {
 
 const StreamlitBuildingViewer = withStreamlitConnection(StreamlitComponent);
 
-ReactDOM.render(
+const root = createRoot(document.getElementById('root'));
+root.render(
   <React.StrictMode>
     <StreamlitBuildingViewer />
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );

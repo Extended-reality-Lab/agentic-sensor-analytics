@@ -1,7 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid } from '@react-three/drei';
-import * as THREE from 'three';
 import SensorNode from './SensorNode';
 import BuildingGeometry from './BuildingGeometry';
 
@@ -19,8 +18,8 @@ export default function Building3DViewer({
         {/* Camera setup */}
         <PerspectiveCamera 
           makeDefault 
-          position={[30, 25, 30]} 
-          fov={50}
+          position={[0, 30, 80]}
+          fov={75}
         />
         
         {/* Lighting */}
@@ -42,11 +41,11 @@ export default function Building3DViewer({
 
         {/* Grid helper for spatial reference */}
         <Grid 
-          args={[50, 50]} 
-          cellSize={1} 
+          args={[100, 100]}       // was [50, 50]
+          cellSize={6} 
           cellColor="#6c6c6c"
           sectionColor="#4a4a4a"
-          fadeDistance={60}
+          fadeDistance={100}      // was 60
           position={[0, 0, 0]}
         />
 
@@ -69,9 +68,10 @@ export default function Building3DViewer({
         <OrbitControls 
           enableDamping 
           dampingFactor={0.05}
-          minDistance={10}
-          maxDistance={100}
-          maxPolarAngle={Math.PI / 2.1} // Prevent going below ground
+          minDistance={5}
+          maxDistance={500}
+          maxPolarAngle={Math.PI / 2.1}
+          target={[0, 8, 0]}   // look slightly above ground at building center
         />
       </Canvas>
 

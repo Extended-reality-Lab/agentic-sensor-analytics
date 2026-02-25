@@ -1,11 +1,40 @@
 import React, { Suspense } from 'react';
-import { useLoader } from '@react-three/fiber';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 function LoadedModel({ modelUrl }) {
-  const gltf = useLoader(GLTFLoader, modelUrl);
-  return <primitive object={gltf.scene} />;
+  const { scene } = useGLTF(modelUrl);
+
+  const box = new THREE.Box3().setFromObject(scene);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+
+  const scale = 15 / size.y;
+
+  // Log so we can see what's happening
+  console.log('size:', size);
+  console.log('center:', center);
+  console.log('box.min:', box.min);
+  console.log('box.max:', box.max);
+  console.log('scale:', scale);
+  console.log('final position:', {
+    x: -center.x * scale,
+    y: -box.min.y * scale,
+    z: -center.z * scale
+  });
+
+  return (
+    <group
+      scale={[scale, scale, scale]}
+      position={[
+        -center.x * scale,  // center on X
+        -box.min.y * scale, // lift so bottom sits at y=0
+        -center.z * scale   // center on Z
+      ]}
+    >
+      <primitive object={scene} />
+    </group>
+  );
 }
 
 function ProceduralBuilding() {
@@ -41,8 +70,10 @@ function ProceduralBuilding() {
 
 export default function BuildingGeometry({ modelUrl }) {
   if (modelUrl) {
+    // Preload so the model is cached and survives rerenders/remounts
+    useGLTF.preload(modelUrl);
     return (
-      <Suspense fallback={<ProceduralBuilding />}>
+      <Suspense fallback={null}>
         <LoadedModel modelUrl={modelUrl} />
       </Suspense>
     );
