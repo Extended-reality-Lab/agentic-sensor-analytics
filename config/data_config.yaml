@@ -45,3 +45,25 @@ sensor_mapping:
     - "mc"
     - "moisture content"
     - "pmm"
+
+  accelerometer_keywords: 
+    - "accel"
+    - "vibration"
+    - "g-force"
+    - "shake"
+    - "motion"
+    - "trimble"
+    - "reftek"
+    - "seismic"
+
+file_data:
+  base_path: "Z:/Data/COF/PeavySensorData"
+  sensitivity_counts_per_g: 419430
+  unit_labels:
+    E2DB: "E2DB"
+    E2DF: "E2DF"
+    E212: "E212"
+  stream_axis_map:
+    "0": "Z"
+    "1": "X"
+    "2": "Y"

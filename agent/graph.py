@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from llm import OllamaLLM
-from data import SensorDataRepository, LLMDataBridge
+from data import SensorDataRepository, LLMDataBridge, UnifiedRepository
 
 from .state import AgentState
 from .nodes import AgentNodes
@@ -245,7 +245,7 @@ class AgentExecutor:
             result = executor.execute("Show me the temperature data")
         """
         llm = OllamaLLM.from_config(llm_config_path)
-        repository = SensorDataRepository.from_config(data_config_path)
+        repository = UnifiedRepository.from_config(data_config_path)
         bridge = LLMDataBridge(repository)
         
         return cls(llm, repository, bridge)

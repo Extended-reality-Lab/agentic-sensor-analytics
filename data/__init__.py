@@ -35,6 +35,7 @@ from .repository import (
     RepositoryError
 )
 
+from .unified_repository import UnifiedRepository
 
 from .config import (
     DataConfig,
@@ -51,6 +52,7 @@ from .llm_bridge import (
 __all__ = [
     # Main repository
     'SensorDataRepository',
+    'UnifiedRepository',
     
     # API Client
     'SMTAPIClient',
