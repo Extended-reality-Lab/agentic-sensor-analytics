@@ -75,7 +75,7 @@ class ExecutionTrace(TypedDict):
     duration_ms: Optional[float]
 
 
-def create_initial_state(user_query: str, use_streaming: bool = True) -> AgentState:
+def create_initial_state(user_query: str, use_streaming: bool = False) -> AgentState:
     """
     Create initial agent state from user query.
     
