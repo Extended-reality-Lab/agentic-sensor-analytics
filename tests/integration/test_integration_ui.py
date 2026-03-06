@@ -7,7 +7,11 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 import tempfile
+import sys
+from pathlib import Path
 import json
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from visualizations import VisualizationBuilder, create_visualization_from_result
 from export_utils import ResultExporter

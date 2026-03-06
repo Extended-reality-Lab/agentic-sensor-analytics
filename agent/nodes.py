@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from llm import OllamaLLM, SystemContext, LLMError
+from llm import OllamaLLM, SystemContext, LLMError, TaskSpecificationParser
 from data import SensorDataRepository, LLMDataBridge, RepositoryError
 from analytics import get_registry
 
@@ -124,10 +124,16 @@ class AgentNodes:
                     'error': 'Missing task specification'
                 })
                 return state
+
+            context_dict = self.bridge.get_system_context()
             
             # Validate using bridge
-            errors = self.bridge.validate_task(task_spec)
-            
+            errors = TaskSpecificationParser.validate_against_context(
+                task_spec=task_spec,
+                available_sensors=context_dict['available_sensors'],
+                available_locations=context_dict['available_locations'],
+                time_range=context_dict['time_range']
+            )
             state['validation_errors'] = errors
             
             duration_ms = (time.time() - start_time) * 1000

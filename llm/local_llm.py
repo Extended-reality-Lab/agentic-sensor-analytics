@@ -209,34 +209,7 @@ class OllamaLLM(LLMInterface):
                 task_spec = TaskSpecification.model_validate_json(
                     response['message']['content']
                 )
-                
-                # Validate against system context
-                errors = TaskSpecificationParser.validate_against_context(
-                    task_spec=task_spec,
-                    available_sensors=system_context.available_sensors,
-                    available_locations=system_context.available_locations,
-                    time_range=system_context.time_range
-                )
-                
-                if errors:
-                    if attempt < self.max_retries - 1:
-                        # Retry with error feedback
-                        error_msg = "Previous extraction had errors:\n" + "\n".join(f"- {e}" for e in errors)
-                        messages.append({
-                            "role": "assistant",
-                            "content": response['message']['content']
-                        })
-                        messages.append({
-                            "role": "user",
-                            "content": f"{error_msg}\n\nPlease correct the extraction."
-                        })
-                        continue
-                    else:
-                        # Generate user-friendly error explanation
-                        error_explanation = self.explain_error(user_query, errors)
-                        raise LLMParseError(error_explanation)
-                
-                # Success!
+
                 return task_spec
                 
             except LLMParseError:
