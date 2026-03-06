@@ -12,17 +12,23 @@ export default function SensorNode({
   onHover,
   onClick 
 }) {
+  const groupRef = useRef();
   const meshRef = useRef();
   const [pulsePhase, setPulsePhase] = useState(0);
 
   // Animate active nodes with pulse effect
   useFrame((state, delta) => {
-    if (isActive && meshRef.current) {
+    if (!meshRef.current || !groupRef.current) return;
+
+    // Group handles hover scale, mesh handles pulse
+    groupRef.current.scale.setScalar(isHovered && !isActive ? 1.3 : 1);
+
+    if (isActive) {
       setPulsePhase((prev) => prev + delta * 2);
-      const scale = 1 + Math.sin(pulsePhase) * 0.2;
-      meshRef.current.scale.setScalar(scale);
-    } else if (meshRef.current) {
-      meshRef.current.scale.setScalar(isHovered ? 1.3 : 1);
+      const pulse = 1 + Math.sin(pulsePhase) * 0.2;
+      meshRef.current.scale.setScalar(pulse);
+    } else {
+      meshRef.current.scale.setScalar(1);
     }
   });
 
@@ -34,7 +40,7 @@ export default function SensorNode({
   };
 
   return (
-    <group position={position}>
+    <group ref={groupRef} position={position}>
       {/* Main sphere */}
       <mesh
         ref={meshRef}

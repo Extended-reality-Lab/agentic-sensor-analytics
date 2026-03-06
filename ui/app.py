@@ -445,25 +445,9 @@ def display_3d_viewer():
     
     st.subheader("🏢 Building Visualization")
     
-    # Floor filter
-    floor_filter = st.selectbox(
-        "View Floor",
-        ["All Floors", "Floor 1", "Floor 2", "Floor 3"],
-        key="floor_filter"
-    )
-    
-    # Filter nodes by floor
-    filtered_nodes = st.session_state.node_positions.copy()
-    if floor_filter != "All Floors":
-        floor_num = int(floor_filter.split()[-1])
-        filtered_nodes = {
-            k: v for k, v in st.session_state.node_positions.items() 
-            if v.get('floor') == floor_num
-        }
-    
     # Display 3D viewer
     selected_node = building_3d_viewer(
-        node_positions=filtered_nodes,
+        node_positions=st.session_state.node_positions,
         model_url="./peavy_hall.glb",
         active_node=st.session_state.get('active_node'),
         height=500,
@@ -487,13 +471,11 @@ def display_3d_viewer():
         node_data = st.session_state.node_positions.get(node_id, {})
         
         with st.expander("📍 Selected Node", expanded=True):
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
             with col1:
                 st.metric("Node", node_id)
             with col2:
                 st.metric("Room", node_data.get('room', 'Unknown'))
-            with col3:
-                st.metric("Floor", node_data.get('floor', 'Unknown'))
             
             st.write("**Available Sensors:**", ", ".join(node_data.get('sensor_types', [])))
 

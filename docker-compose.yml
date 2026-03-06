@@ -23,27 +23,9 @@ services:
     volumes:
       - ollama_data:/root/.ollama
       - ./config/llm_config.yaml:/llm_config.yaml:ro
+      - ./scripts/pull_model.sh:/pull_model.sh:ro
     entrypoint: /bin/sh
-    command: >
-      -c '
-      echo "Waiting for Ollama service to be ready...";
-      sleep 10;
-      while ! ollama list >/dev/null 2>&1; do
-        echo "Waiting for Ollama API...";
-        sleep 3;
-      done;
-      echo "Ollama is ready!";
-      MODEL=$$(grep "model_name:" /llm_config.yaml | sed "s/.*model_name: *[\"'\'']*//;s/[\"'\'']*$//");
-      echo "Config file requests model: $$MODEL";
-      if [ -n "$$MODEL" ]; then
-        echo "Pulling model: $$MODEL";
-        ollama pull $$MODEL;
-        echo "Model $$MODEL successfully pulled!";
-      else
-        echo "ERROR: No model name found in config file";
-        exit 1;
-      fi
-      '
+    command: /pull_model.sh
     environment:
       - OLLAMA_HOST=ollama:11434
     depends_on:
@@ -70,7 +52,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 120s
 
   # Streamlit application
   app:
@@ -91,8 +73,6 @@ services:
     depends_on:
       ollama-puller:
         condition: service_completed_successfully
-      frontend:
-        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]

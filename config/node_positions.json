@@ -3,445 +3,259 @@
     "x": -15,
     "y": 2,
     "z": 0,
-    "floor": 1,
     "room": "Room Node 11",
-    "sensor_types": [
-      "humidity",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "strain", "temperature"]
   },
   "Node 12": {
     "x": -5,
     "y": 2,
     "z": 0,
-    "floor": 1,
     "room": "Room Node 12",
-    "sensor_types": [
-      "humidity",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "strain", "temperature"]
   },
   "Node 13": {
     "x": 5,
     "y": 2,
     "z": 0,
-    "floor": 1,
     "room": "Room Node 13",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 14": {
     "x": 15,
     "y": 2,
     "z": 0,
-    "floor": 1,
     "room": "Room Node 14",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 15": {
     "x": -15,
     "y": 2,
     "z": 5,
-    "floor": 1,
     "room": "Room Node 15",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 16": {
     "x": -5,
     "y": 2,
     "z": 5,
-    "floor": 1,
     "room": "Room Node 16",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 17": {
     "x": 5,
     "y": 2,
     "z": 5,
-    "floor": 1,
     "room": "Room Node 17",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 18": {
     "x": 15,
     "y": 2,
     "z": 5,
-    "floor": 1,
     "room": "Room Node 18",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 1": {
     "x": -15,
     "y": 2,
     "z": 10,
-    "floor": 1,
     "room": "Room Node 1",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 19": {
     "x": -5,
     "y": 2,
     "z": 10,
-    "floor": 1,
     "room": "Room Node 19",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 20": {
     "x": 5,
     "y": 2,
     "z": 10,
-    "floor": 1,
     "room": "Room Node 20",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 21": {
     "x": 15,
     "y": 2,
     "z": 10,
-    "floor": 1,
     "room": "Room Node 21",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 22": {
     "x": -15,
     "y": 2,
     "z": 15,
-    "floor": 1,
     "room": "Room Node 22",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 23": {
     "x": -5,
     "y": 2,
     "z": 15,
-    "floor": 1,
     "room": "Room Node 23",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 24": {
     "x": 5,
     "y": 2,
     "z": 15,
-    "floor": 1,
     "room": "Room Node 24",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 25": {
     "x": 15,
     "y": 2,
     "z": 15,
-    "floor": 1,
     "room": "Room Node 25",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 26": {
     "x": -15,
     "y": 2,
     "z": 20,
-    "floor": 1,
     "room": "Room Node 26",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "strain", "temperature"]
   },
   "Node 27": {
     "x": -5,
     "y": 2,
     "z": 20,
-    "floor": 1,
     "room": "Room Node 27",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 28": {
     "x": 5,
     "y": 2,
     "z": 20,
-    "floor": 1,
     "room": "Room Node 28",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 2": {
     "x": 15,
     "y": 2,
     "z": 20,
-    "floor": 1,
     "room": "Room Node 2",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 31": {
     "x": -15,
     "y": 2,
     "z": 25,
-    "floor": 1,
     "room": "Room Node 31",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 32": {
     "x": -5,
     "y": 2,
     "z": 25,
-    "floor": 1,
     "room": "Room Node 32",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 33": {
     "x": 5,
     "y": 2,
     "z": 25,
-    "floor": 1,
     "room": "Room Node 33",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 34": {
     "x": 15,
     "y": 2,
     "z": 25,
-    "floor": 1,
     "room": "Room Node 34",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 35": {
     "x": -15,
     "y": 2,
     "z": 30,
-    "floor": 1,
     "room": "Room Node 35",
-    "sensor_types": [
-      "humidity",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "strain", "temperature"]
   },
   "Node 36": {
     "x": -5,
     "y": 2,
     "z": 30,
-    "floor": 1,
     "room": "Room Node 36",
-    "sensor_types": [
-      "humidity",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "strain", "temperature"]
   },
   "Node 37": {
     "x": 5,
     "y": 2,
     "z": 30,
-    "floor": 1,
     "room": "Room Node 37",
-    "sensor_types": [
-      "humidity",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "strain", "temperature"]
   },
   "Node 38": {
     "x": 15,
     "y": 2,
     "z": 30,
-    "floor": 1,
     "room": "Room Node 38",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 3": {
     "x": -15,
     "y": 2,
     "z": 35,
-    "floor": 1,
     "room": "Room Node 3",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 39": {
     "x": -5,
     "y": 2,
     "z": 35,
-    "floor": 1,
     "room": "Room Node 39",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 40": {
     "x": 5,
     "y": 2,
     "z": 35,
-    "floor": 1,
     "room": "Room Node 40",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 4": {
     "x": 15,
     "y": 2,
     "z": 35,
-    "floor": 1,
     "room": "Room Node 4",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 5": {
     "x": -15,
     "y": 2,
     "z": 40,
-    "floor": 1,
     "room": "Room Node 5",
-    "sensor_types": [
-      "humidity",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "strain", "temperature"]
   },
   "Node 6": {
     "x": -5,
     "y": 2,
     "z": 40,
-    "floor": 1,
     "room": "Room Node 6",
-    "sensor_types": [
-      "humidity",
-      "strain",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "strain", "temperature"]
   },
   "Node 7": {
     "x": 5,
     "y": 2,
     "z": 40,
-    "floor": 1,
     "room": "Room Node 7",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 8": {
     "x": 15,
     "y": 2,
     "z": 40,
-    "floor": 1,
     "room": "Room Node 8",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   },
   "Node 9": {
     "x": -15,
     "y": 2,
     "z": 45,
-    "floor": 1,
     "room": "Room Node 9",
-    "sensor_types": [
-      "humidity",
-      "moisture",
-      "temperature"
-    ]
+    "sensor_types": ["humidity", "moisture", "temperature"]
   }
 }

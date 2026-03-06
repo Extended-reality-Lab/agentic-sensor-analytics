@@ -1,37 +1,27 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 function LoadedModel({ modelUrl }) {
   const { scene } = useGLTF(modelUrl);
 
-  const box = new THREE.Box3().setFromObject(scene);
-  const size = box.getSize(new THREE.Vector3());
-  const center = box.getCenter(new THREE.Vector3());
-
-  const scale = 15 / size.y;
-
-  // Log so we can see what's happening
-  console.log('size:', size);
-  console.log('center:', center);
-  console.log('box.min:', box.min);
-  console.log('box.max:', box.max);
-  console.log('scale:', scale);
-  console.log('final position:', {
-    x: -center.x * scale,
-    y: -box.min.y * scale,
-    z: -center.z * scale
-  });
+  const { scale, position } = useMemo(() => {
+    const box = new THREE.Box3().setFromObject(scene);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const s = 15 / size.y;
+    return {
+      scale: s,
+      position: [
+        -center.x * s,
+        -box.min.y * s,
+        -center.z * s
+      ]
+    };
+  }, [scene]);
 
   return (
-    <group
-      scale={[scale, scale, scale]}
-      position={[
-        -center.x * scale,  // center on X
-        -box.min.y * scale, // lift so bottom sits at y=0
-        -center.z * scale   // center on Z
-      ]}
-    >
+    <group scale={[scale, scale, scale]} position={position}>
       <primitive object={scene} />
     </group>
   );
@@ -70,7 +60,6 @@ function ProceduralBuilding() {
 
 export default function BuildingGeometry({ modelUrl }) {
   if (modelUrl) {
-    // Preload so the model is cached and survives rerenders/remounts
     useGLTF.preload(modelUrl);
     return (
       <Suspense fallback={null}>
