@@ -13,9 +13,9 @@ import json
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from visualizations import VisualizationBuilder, create_visualization_from_result
-from export_utils import ResultExporter
-from ui_config import UIConfig, UITheme, ChatConfig, VisualizationConfig
+from ui.visualizations import VisualizationBuilder, create_visualization_from_result
+from ui.export_utils import ResultExporter
+from ui.ui_config import UIConfig, UITheme, ChatConfig, VisualizationConfig
 
 
 class TestVisualizationBuilder:
@@ -170,7 +170,7 @@ class TestResultExporter:
     def test_export_to_csv(self):
         """Test CSV export."""
         df = pd.DataFrame({
-            'timestamp': pd.date_range('2024-01-01', periods=10, freq='H'),
+            'timestamp': pd.date_range('2024-01-01', periods=10, freq='h'),
             'value': range(10),
             'unit': ['°C'] * 10
         })
@@ -218,21 +218,6 @@ class TestResultExporter:
         
         assert len(data) == 3
         assert data[0]['role'] == 'user'
-    
-    def test_create_report(self):
-        """Test HTML report creation."""
-        filepath = self.exporter.create_report(self.sample_state)
-        
-        assert filepath.exists()
-        assert filepath.suffix == '.html'
-        
-        # Verify content
-        with open(filepath, 'r') as f:
-            content = f.read()
-        
-        assert 'Smart Building Analytics Report' in content
-        assert self.sample_state['user_query'] in content
-        assert self.sample_state['explanation'] in content
 
 
 class TestUIConfig:

@@ -2,7 +2,7 @@
 
 llm:
   # Model configuration
-  model_name: "llama3.1:8b"
+  model_name: llama3.1:8b
   
   # Ollama server settings - localhost for local development and ollama for docker
   base_url: "http://localhost:11434"
