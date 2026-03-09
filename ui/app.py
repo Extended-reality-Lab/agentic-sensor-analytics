@@ -1,5 +1,5 @@
 """
-Streamlit application for Peavy Hall LLM.
+Streamlit application for Ask Peavy.
 Provides a chat interface for natural language queries with visualizations.
 """
 
@@ -31,7 +31,7 @@ except ImportError:
 
 # Page configuration
 st.set_page_config(
-    page_title="Peavy Hall LLM",
+    page_title="Ask Peavy",
     page_icon="🏢",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -128,7 +128,7 @@ def initialize_executor():
 def display_sidebar():
     """Display sidebar with system information and settings."""
     with st.sidebar:
-        st.title("🏢 Peavy Hall LLM")
+        st.title("🏢 Ask Peavy")
         st.markdown("---")
         
         # System status
@@ -587,7 +587,7 @@ def main():
     display_sidebar()
     
     # Main content area
-    st.title("Peavy Hall LLM")
+    st.title("Ask Peavy")
     st.markdown("Ask questions about Peavy Hall sensor data in natural language.")
     st.markdown("---")
     
