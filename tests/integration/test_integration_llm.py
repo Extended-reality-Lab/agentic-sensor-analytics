@@ -60,7 +60,7 @@ def test_ollama_connection():
 
 
 def test_intent_extraction():
-    """Test intent extraction with example queries."""
+    """Test intent extraction with all query types."""
     print("\nTesting intent extraction...")
     
     try:
@@ -72,40 +72,64 @@ def test_intent_extraction():
         
         # Create mock system context
         context = SystemContext(
-            available_sensors=["temperature", "humidity", "co2", "energy", "occupancy"],
-            available_locations=["Node12", "Node13", "Node14", "Node15", "Node16"],
+            available_sensors=["temperature", "humidity", "moisture", "strain"],
+            available_locations=["Node 1", "Node 4", "Node 8", "Node 15", "Node 25", "Node 35"],
             time_range=(
                 datetime(2025, 1, 1, tzinfo=timezone.utc),
                 datetime.now(timezone.utc) + timedelta(days=1)
             )
         )
-        
-        # Test queries
+
+        # One test query per intent type
         test_queries = [
-            "What was the average temperature in Node 15 yesterday?",
-            "Compare humidity levels between Node 14 and Node 15 last week",
-            "Show me daily average humidity for Node 15 over the past month"
+            # (description, query, expected_intent, expected_operation)
+            ("QUERY/mean",          "What was the average temperature in Node 15 yesterday?",              "query",          "mean"),
+            ("QUERY/max",           "What was the highest humidity in Node 4 last month?",                 "query",          "max"),
+            ("QUERY/min",           "What was the lowest moisture level in Node 1 last week?",             "query",          "min"),
+            ("QUERY/summary",       "Provide a summary of moisture levels in Node 15 for the past month.", "query",          "summary"),
+            ("AGGREGATION/daily",   "What was the temperature each day in Node 1 last week?",              "aggregation",    "mean"),
+            ("AGGREGATION/hourly",  "Show me hourly humidity in Node 4 yesterday.",                        "aggregation",    "mean"),
+            ("COMPARISON",          "Compare humidity between Node 15 and Node 25 over the past week.",    "comparison",     "mean"),
+            ("THRESHOLD",      "Which nodes exceeded 20°C more than 50% of the time last month?",    "threshold", "mean"),
         ]
         
-        for i, query in enumerate(test_queries, 1):
-            print(f"\n--- Test Query {i} ---")
+        passed = 0
+        failed = 0
+
+        for desc, query, expected_intent, expected_op in test_queries:
+            print(f"\n--- {desc} ---")
             print(f"Query: {query}")
             
             try:
                 task_spec = llm.extract_intent(query, context)
-                
-                print(f"✓ Intent extraction successful")
-                print(f"  Intent Type: {task_spec.intent_type}")
-                print(f"  Sensor: {task_spec.sensor_type}")
-                print(f"  Location: {task_spec.location}")
-                print(f"  Operation: {task_spec.operation}")
-                print(f"  Time Range: {task_spec.start_time.date()} to {task_spec.end_time.date()}")
-                print(f"  Confidence: {task_spec.confidence:.2f}")
+
+                intent_ok = task_spec.intent_type.value == expected_intent
+                op_ok     = task_spec.operation.value  == expected_op
+
+                status = "✓" if (intent_ok and op_ok) else "✗"
+                if intent_ok and op_ok:
+                    passed += 1
+                else:
+                    failed += 1
+
+                print(f"  {status} intent_type : {task_spec.intent_type.value!r}  (expected {expected_intent!r})")
+                print(f"  {status} operation   : {task_spec.operation.value!r}  (expected {expected_op!r})")
+                print(f"    sensor_type       : {task_spec.sensor_type}")
+                print(f"    location          : {task_spec.location}")
+                print(f"    time_range        : {task_spec.start_time.date()} to {task_spec.end_time.date()}")
+                print(f"    aggregation_level : {task_spec.aggregation_level}")
+                print(f"    threshold_value   : {task_spec.threshold_value}")
+                print(f"    result_threshold  : {task_spec.result_threshold}")
+                print(f"    confidence        : {task_spec.confidence:.2f}")
                 
             except Exception as e:
-                print(f"✗ Extraction failed: {e}")
-        
-        return True
+                failed += 1
+                print(f"  ✗ Extraction failed: {e}")
+
+        print(f"\n{'='*40}")
+        print(f"Intent extraction: {passed}/{passed+failed} passed")
+        print(f"{'='*40}")
+        return failed == 0
         
     except Exception as e:
         print(f"✗ Test failed: {e}")
@@ -128,7 +152,7 @@ def test_result_explanation():
         # Create mock system context
         context = SystemContext(
             available_sensors=["temperature"],
-            available_locations=["Node15"],
+            available_locations=["Node 15"],
             time_range=(
                 datetime(2025, 1, 1, tzinfo=timezone.utc),
                 datetime.now(timezone.utc) + timedelta(days=1)
@@ -136,7 +160,7 @@ def test_result_explanation():
         )
         
         # Mock query and extraction
-        query = "What was the average temperature in Node15 yesterday?"
+        query = "What was the average temperature in Node 15 yesterday?"
         task_spec = llm.extract_intent(query, context)
         
         # Mock analytics results
@@ -183,7 +207,7 @@ def test_error_explanation():
         
         query = "What was the temperature in Node100 yesterday?"
         errors = [
-            "Unknown location 'Node100'. Available locations include: Node13, Node14, Node15...",
+            "Unknown location 'Node100'. Available locations include: Node 1, Node 4, Node 15...",
         ]
         
         explanation = llm.explain_error(query, errors)
