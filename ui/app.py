@@ -230,8 +230,9 @@ def display_sidebar():
             "Compare humidity between Node 15 and Node 25 over the past week.",
             "What was the average strain for Node 35 in June 2025?",
             "What was the average humidity for Node 4 last month?",
-            "What was the highest moisture level recorded in Node 17 over the past year?",
+            "What was the highest temperature level recorded in Node 1 over the past year?",
             "Provide a summary of moisture levels in Node 15 for the past month.",
+            "Which nodes exceeded 20°C more than 50% of the time last month?",
         ]
         
         for example in examples:
