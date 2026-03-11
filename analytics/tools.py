@@ -339,7 +339,7 @@ class StatisticalSummaryTool(AnalyticsTool):
 
 class ThresholdScanTool(AnalyticsTool):
     """
-    Step 1 of a threshold_scan query.
+    Step 1 of a threshold query.
     Computes percent_time above/below the threshold for every location in the DataFrame.
     Returns all locations with their values so ResultFilterTool can apply the
     secondary criterion in the next step.
@@ -354,7 +354,7 @@ class ThresholdScanTool(AnalyticsTool):
 
     def __init__(self):
         super().__init__()
-        self.name = "threshold_scan"
+        self.name = "threshold"
         self.description = "Compute percent_time above/below threshold for every location"
         self.parameters = ["threshold_value", "threshold_operator"]
 
@@ -405,7 +405,7 @@ class ThresholdScanTool(AnalyticsTool):
             value=scan_results,
             unit="%",
             metadata={
-                "operation": "threshold_scan",
+                "operation": "threshold",
                 "threshold_value": float(threshold_value),
                 "threshold_operator": threshold_operator,
                 "num_locations_scanned": len(scan_results),
@@ -418,7 +418,7 @@ class ThresholdScanTool(AnalyticsTool):
 
 class ResultFilterTool(AnalyticsTool):
     """
-    Step 2 of a threshold_scan query.
+    Step 2 of a threshold query.
     Filters the scan_results list from ThresholdScanTool, keeping only locations
     where percent_time satisfies the secondary result_threshold criterion
     (e.g. percent_time > 50).

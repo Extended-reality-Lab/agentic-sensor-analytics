@@ -69,7 +69,7 @@ USER QUERY:
 OUTPUT FORMAT — return ONLY this JSON, no markdown, no explanation:
 
 {{
-  "intent_type": "<query|comparison|aggregation|threshold_scan>",
+  "intent_type": "<query|comparison|aggregation|threshold>",
   "sensor_type": "<temperature|humidity|moisture|strain>",
   "location": "<single location string OR list of strings for comparison>",
   "start_time": "<ISO 8601 datetime with timezone>",
@@ -86,10 +86,10 @@ OUTPUT FORMAT — return ONLY this JSON, no markdown, no explanation:
 CLASSIFICATION — work through A→E in order. Use the FIRST match.
 ════════════════════════════════════════
 
-A) THRESHOLD_SCAN — matches when ALL of:
+A) THRESHOLD — matches when ALL of:
    • Query asks WHICH or WHERE (not asking about one named node)
    • Contains a sensor threshold: "exceeded X", "above X", "below X", "over X°"
-   → intent_type = "threshold_scan"
+   → intent_type = "threshold"
    → location = "{available_locations[0] if available_locations else 'Node 1'}"  ← MUST be exactly ONE valid location string, NOT a list, NOT multiple nodes
    → operation = "mean"  ← placeholder
    → aggregation_level = null
@@ -97,8 +97,8 @@ A) THRESHOLD_SCAN — matches when ALL of:
    → threshold_operator: "exceeded/above/over/more than" → ">"  |  "below/under/less than" → "<"
    → result_threshold = secondary % cutoff if stated (e.g. "more than 50% of the time" → 50.0), else 0.0
    EXAMPLES:
-     "Which nodes exceeded 25°C more than 50% of the time?" → threshold_scan, threshold_value=25.0, threshold_operator=">", result_threshold=50.0
-     "Where did humidity go above 60% for over 30% of last week?" → threshold_scan, threshold_value=60.0, threshold_operator=">", result_threshold=30.0
+     "Which nodes exceeded 25°C more than 50% of the time?" → threshold, threshold_value=25.0, threshold_operator=">", result_threshold=50.0
+     "Where did humidity go above 60% for over 30% of last week?" → threshold, threshold_value=60.0, threshold_operator=">", result_threshold=30.0
 
 B) SUMMARY — matches when ANY of these words appear in the query (REGARDLESS of other words):
    "summary", "summarize", "statistics", "stats", "distribution", "overview"
@@ -164,11 +164,11 @@ DATE RULES
 ════════════════════════════════════════
 FIELD RULES
 ════════════════════════════════════════
-- threshold_scan : threshold_value and threshold_operator REQUIRED; result_threshold = 0.0 if not stated
+- threshold : threshold_value and threshold_operator REQUIRED; result_threshold = 0.0 if not stated
 - comparison     : location MUST be a JSON array with 2+ strings
 - aggregation    : location MUST be a single string; aggregation_level MUST be "hourly"|"daily"|"weekly"
 - query/summary  : location MUST be a single string; aggregation_level = null
-- Non-threshold_scan: threshold_value = null, threshold_operator = null, result_threshold = null
+- Non-threshold: threshold_value = null, threshold_operator = null, result_threshold = null
 
 Return ONLY the JSON object.
 """

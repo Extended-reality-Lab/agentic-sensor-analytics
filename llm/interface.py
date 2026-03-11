@@ -16,7 +16,7 @@ class IntentType(str, Enum):
     QUERY = "query"
     COMPARISON = "comparison"
     AGGREGATION = "aggregation"
-    THRESHOLD_SCAN = "threshold_scan"
+    THRESHOLD = "threshold"
 
 
 class Operation(str, Enum):
@@ -74,15 +74,15 @@ class TaskSpecification(BaseModel):
     # Threshold scan fields
     threshold_value: Optional[float] = Field(
         default=None,
-        description="Numeric threshold to test each reading against (threshold_scan only)"
+        description="Numeric threshold to test each reading against (threshold only)"
     )
     threshold_operator: Optional[str] = Field(
         default=None,
-        description="Comparison operator: '>' | '>=' | '<' | '<=' (threshold_scan only)"
+        description="Comparison operator: '>' | '>=' | '<' | '<=' (threshold only)"
     )
     result_threshold: Optional[float] = Field(
         default=None,
-        description="Secondary filter: keep locations where percent_time satisfies this value (threshold_scan only)"
+        description="Secondary filter: keep locations where percent_time satisfies this value (threshold only)"
     )
 
     @field_validator('end_time')

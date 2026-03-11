@@ -53,7 +53,7 @@ class LLMDataBridge:
         elif task_spec.intent_type == IntentType.AGGREGATION:
             return self._execute_aggregation(task_spec)
 
-        elif task_spec.intent_type == IntentType.THRESHOLD_SCAN:
+        elif task_spec.intent_type == IntentType.THRESHOLD:
             return self._execute_scan(task_spec)
         
         else:
@@ -131,7 +131,7 @@ class LLMDataBridge:
         Fetches data for every location that carries the requested sensor type.
 
         Args:
-            task_spec: TaskSpecification with intent_type=THRESHOLD_SCAN
+            task_spec: TaskSpecification with intent_type=THRESHOLD
 
         Returns:
             DataFrame with readings from all locations (has 'location' column)

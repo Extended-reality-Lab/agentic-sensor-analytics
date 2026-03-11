@@ -135,7 +135,7 @@ class AgentNodes:
                 time_range=context_dict['time_range']
             )
 
-            if task_spec.intent_type.value == 'threshold_scan':
+            if task_spec.intent_type.value == 'threshold':
                 errors = [e for e in errors if 'location' not in e.lower()]
             state['validation_errors'] = errors
             
@@ -257,9 +257,9 @@ class AgentNodes:
                 tool = self.registry.get_tool('spatial_comparison')
             elif task_spec.operation.value == 'summary':
                 tool = self.registry.get_tool('statistical_summary')
-            elif task_spec.intent_type.value == 'threshold_scan':
+            elif task_spec.intent_type.value == 'threshold':
                 # Step 1: compute percent_time per location
-                scan_tool = self.registry.get_tool('threshold_scan')
+                scan_tool = self.registry.get_tool('threshold')
                 scan_result = scan_tool.execute(
                     data,
                     threshold_value=task_spec.threshold_value,
@@ -268,7 +268,7 @@ class AgentNodes:
                 if not scan_result.success:
                     state['validation_errors'] = [scan_result.error_message]
                     add_trace_entry(state, 'execute_analytics', 'failed', {
-                        'error': scan_result.error_message, 'tool': 'threshold_scan'
+                        'error': scan_result.error_message, 'tool': 'threshold'
                     }, (time.time() - start_time) * 1000)
                     return state
 
@@ -289,7 +289,7 @@ class AgentNodes:
 
                 state['analytics_result'] = result.model_dump()
                 add_trace_entry(state, 'execute_analytics', 'completed', {
-                    'tool': 'threshold_scan → result_filter',
+                    'tool': 'threshold → result_filter',
                     'num_locations_scanned': scan_result.metadata['num_locations_scanned'],
                     'num_qualifying': result.metadata['num_qualifying'],
                 }, (time.time() - start_time) * 1000)
