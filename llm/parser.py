@@ -61,12 +61,12 @@ class TaskSpecificationParser:
         
         # Validate time range
         min_date, max_date = time_range
-        if task_spec.start_time < min_date:
+        if task_spec.start_time.date() < min_date.date():
             errors.append(
                 f"Start time ({task_spec.start_time.date()}) is before available data. "
                 f"Data starts from {min_date.date()}."
             )
-        if task_spec.end_time > max_date:
+        if task_spec.end_time.date() > max_date.date():
             errors.append(
                 f"End time ({task_spec.end_time.date()}) is after available data. "
                 f"Data available until {max_date.date()}."

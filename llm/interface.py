@@ -16,6 +16,7 @@ class IntentType(str, Enum):
     QUERY = "query"
     COMPARISON = "comparison"
     AGGREGATION = "aggregation"
+    THRESHOLD_SCAN = "threshold_scan"
 
 
 class Operation(str, Enum):
@@ -69,7 +70,21 @@ class TaskSpecification(BaseModel):
         le=1.0,
         description="LLM's confidence in the extraction (0.0-1.0)"
     )
-    
+
+    # Threshold scan fields
+    threshold_value: Optional[float] = Field(
+        default=None,
+        description="Numeric threshold to test each reading against (threshold_scan only)"
+    )
+    threshold_operator: Optional[str] = Field(
+        default=None,
+        description="Comparison operator: '>' | '>=' | '<' | '<=' (threshold_scan only)"
+    )
+    result_threshold: Optional[float] = Field(
+        default=None,
+        description="Secondary filter: keep locations where percent_time satisfies this value (threshold_scan only)"
+    )
+
     @field_validator('end_time')
     @classmethod
     def end_after_start(cls, v: datetime, info) -> datetime:
@@ -77,7 +92,7 @@ class TaskSpecification(BaseModel):
         if 'start_time' in info.data and v <= info.data['start_time']:
             raise ValueError("end_time must be after start_time")
         return v
-    
+
     @model_validator(mode='after')
     def validate_location_matches_intent(self) -> 'TaskSpecification':
         """Validate location matches intent type."""
@@ -86,17 +101,17 @@ class TaskSpecification(BaseModel):
         if self.intent_type == IntentType.QUERY and isinstance(self.location, list):
             raise ValueError("Simple queries require single location")
         return self
-    
+
     def get_locations_list(self) -> list[str]:
         """Get locations as a list regardless of whether it's string or list."""
         return [self.location] if isinstance(self.location, str) else self.location
-    
+
 class LLMInterface(ABC):
     """
     Abstract base class for LLM components.
     All LLM implementations must inherit from this class.
     """
-    
+
     @abstractmethod
     def extract_intent(
         self,
@@ -118,7 +133,7 @@ class LLMInterface(ABC):
             LLMError: If the LLM fails to generate valid output
         """
         pass
-    
+
     @abstractmethod
     def explain_results(
         self,
@@ -141,7 +156,7 @@ class LLMInterface(ABC):
             LLMError: If explanation generation fails
         """
         pass
-    
+
 
     @abstractmethod
     def explain_error(
@@ -160,7 +175,7 @@ class LLMInterface(ABC):
             User-friendly error explanation
         """
         pass
-    
+
     def is_available(self) -> bool:
         """
         Check if the LLM is available and ready to use.

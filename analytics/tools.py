@@ -36,13 +36,16 @@ class TemporalMeanTool(AnalyticsTool):
         # Get operation from kwargs (default to 'mean')
         operation = kwargs.get('operation', 'mean')
         
-        # Calculate based on operation
+        # Calculate based on operation; record exact timestamp for max/min
+        extreme_timestamp = None
         if operation == 'mean':
             result_value = data['value'].mean()
         elif operation == 'min':
             result_value = data['value'].min()
+            extreme_timestamp = str(data.loc[data['value'].idxmin(), 'timestamp'])
         elif operation == 'max':
             result_value = data['value'].max()
+            extreme_timestamp = str(data.loc[data['value'].idxmax(), 'timestamp'])
         else:
             return AnalyticsResult(
                 value=None,
@@ -63,6 +66,7 @@ class TemporalMeanTool(AnalyticsTool):
         ]
         
         # Compute metadata: std dev, min, max, sample size
+        # extreme_timestamp pinpoints the exact reading for max/min operations
         metadata = {
             "operation": operation,
             "std_dev": float(data['value'].std()),
@@ -71,6 +75,8 @@ class TemporalMeanTool(AnalyticsTool):
             "sample_size": len(data),
             "time_series": time_series
         }
+        if extreme_timestamp is not None:
+            metadata["extreme_timestamp"] = extreme_timestamp
         
         # Return AnalyticsResult with statistics
         return AnalyticsResult(
@@ -325,6 +331,146 @@ class StatisticalSummaryTool(AnalyticsTool):
             metadata={
                 "operation": "summary",
                 "statistics": statistics_for_viz
+            },
+            success=True,
+            execution_time_ms=(time.time() - start_time) * 1000
+        )
+
+
+class ThresholdScanTool(AnalyticsTool):
+    """
+    Step 1 of a threshold_scan query.
+    Computes percent_time above/below the threshold for every location in the DataFrame.
+    Returns all locations with their values so ResultFilterTool can apply the
+    secondary criterion in the next step.
+    """
+
+    _OPS = {
+        ">":  lambda s, v: s > v,
+        ">=": lambda s, v: s >= v,
+        "<":  lambda s, v: s < v,
+        "<=": lambda s, v: s <= v,
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.name = "threshold_scan"
+        self.description = "Compute percent_time above/below threshold for every location"
+        self.parameters = ["threshold_value", "threshold_operator"]
+
+    def execute(self, data: pd.DataFrame, **kwargs) -> AnalyticsResult:
+        start_time = time.time()
+
+        required_cols = {'timestamp', 'value', 'unit', 'location'}
+        if not required_cols.issubset(data.columns):
+            return AnalyticsResult(
+                value=None, unit=None, metadata={}, success=False,
+                error_message=f"Missing required columns: {required_cols - set(data.columns)}",
+                execution_time_ms=(time.time() - start_time) * 1000
+            )
+
+        threshold_value = kwargs.get('threshold_value')
+        threshold_operator = kwargs.get('threshold_operator', '>')
+
+        if threshold_value is None:
+            return AnalyticsResult(
+                value=None, unit=None, metadata={}, success=False,
+                error_message="threshold_value is required",
+                execution_time_ms=(time.time() - start_time) * 1000
+            )
+
+        if threshold_operator not in self._OPS:
+            return AnalyticsResult(
+                value=None, unit=None, metadata={}, success=False,
+                error_message=f"Invalid threshold_operator '{threshold_operator}'",
+                execution_time_ms=(time.time() - start_time) * 1000
+            )
+
+        op_fn = self._OPS[threshold_operator]
+        scan_results = []
+
+        for location in data['location'].unique():
+            loc_data = data[data['location'] == location]
+            total = len(loc_data)
+            crossing = int(op_fn(loc_data['value'], threshold_value).sum())
+            percent_time = round((crossing / total) * 100, 2) if total > 0 else 0.0
+            scan_results.append({
+                "location": location,
+                "percent_time": percent_time,
+                "crossing_readings": crossing,
+                "total_readings": total,
+            })
+
+        return AnalyticsResult(
+            value=scan_results,
+            unit="%",
+            metadata={
+                "operation": "threshold_scan",
+                "threshold_value": float(threshold_value),
+                "threshold_operator": threshold_operator,
+                "num_locations_scanned": len(scan_results),
+                "scan_results": scan_results,
+            },
+            success=True,
+            execution_time_ms=(time.time() - start_time) * 1000
+        )
+
+
+class ResultFilterTool(AnalyticsTool):
+    """
+    Step 2 of a threshold_scan query.
+    Filters the scan_results list from ThresholdScanTool, keeping only locations
+    where percent_time satisfies the secondary result_threshold criterion
+    (e.g. percent_time > 50).
+    """
+
+    _OPS = {
+        ">":  lambda v, t: v > t,
+        ">=": lambda v, t: v >= t,
+        "<":  lambda v, t: v < t,
+        "<=": lambda v, t: v <= t,
+    }
+
+    def __init__(self):
+        super().__init__()
+        self.name = "result_filter"
+        self.description = "Filter threshold scan results by a secondary percent_time criterion"
+        self.parameters = ["scan_results", "result_threshold", "threshold_operator"]
+
+    def execute(self, data: pd.DataFrame, **kwargs) -> AnalyticsResult:
+        start_time = time.time()
+
+        scan_results = kwargs.get('scan_results')
+        result_threshold = kwargs.get('result_threshold', 0.0)
+        threshold_operator = kwargs.get('threshold_operator', '>')
+
+        if scan_results is None:
+            return AnalyticsResult(
+                value=None, unit=None, metadata={}, success=False,
+                error_message="scan_results is required",
+                execution_time_ms=(time.time() - start_time) * 1000
+            )
+
+        op_fn = self._OPS.get(threshold_operator, lambda v, t: v > t)
+
+        qualifying = [r for r in scan_results if op_fn(r['percent_time'], result_threshold)]
+        qualifying.sort(key=lambda r: r['percent_time'], reverse=True)
+
+        comparison_data = {
+            r['location']: {"mean": r['percent_time']}
+            for r in qualifying
+        }
+
+        return AnalyticsResult(
+            value=qualifying,
+            unit="%",
+            metadata={
+                "operation": "result_filter",
+                "result_threshold": float(result_threshold),
+                "threshold_operator": threshold_operator,
+                "num_qualifying": len(qualifying),
+                "num_scanned": len(scan_results),
+                "comparison_data": comparison_data,
             },
             success=True,
             execution_time_ms=(time.time() - start_time) * 1000

@@ -51,7 +51,7 @@ IMPORTANT LOCATION RULES:
   * "temperature in Node 10" → location should be "Node 10" (explicit, ignore selected)
 """
         
-        prompt = f"""You are a task extraction assistant for a smart building analytics system. 
+        prompt = f"""You are a task extraction assistant for a smart building analytics system.
 Your job is to convert natural language queries into structured JSON task specifications.
 
 Data available from: {time_range[0].strftime('%Y-%m-%d')} to {time_range[1].strftime('%Y-%m-%d')}
@@ -66,101 +66,109 @@ AVAILABLE SENSOR TYPES:
 USER QUERY:
 {user_query}
 
-INSTRUCTIONS:
-Extract the following information and return ONLY valid JSON (no markdown, no explanations):
+OUTPUT FORMAT — return ONLY this JSON, no markdown, no explanation:
 
 {{
-"intent_type": "<query|comparison|aggregation>",
-"sensor_type": "<temperature|humidity|moisture|strain>",
-"location": "<single location string OR list of locations for comparison>",
-"start_time": "<ISO 8601 datetime>",
-"end_time": "<ISO 8601 datetime>",
-"operation": "<mean|max|min|sum|std|count|summary>",
-"aggregation_level": "<hourly|daily|weekly|null>",
-"confidence": <0.0-1.0 confidence score>
+  "intent_type": "<query|comparison|aggregation|threshold_scan>",
+  "sensor_type": "<temperature|humidity|moisture|strain>",
+  "location": "<single location string OR list of strings for comparison>",
+  "start_time": "<ISO 8601 datetime with timezone>",
+  "end_time": "<ISO 8601 datetime with timezone>",
+  "operation": "<mean|max|min|sum|std|count|summary>",
+  "aggregation_level": "<hourly|daily|weekly|null>",
+  "confidence": <0.0-1.0>,
+  "threshold_value": <number or null>,
+  "threshold_operator": "<>|>=|<|<=|null>",
+  "result_threshold": <number or null>
 }}
 
-INTENT TYPE SELECTION - Follow these rules IN ORDER:
+════════════════════════════════════════
+CLASSIFICATION — work through A→E in order. Use the FIRST match.
+════════════════════════════════════════
 
-**STEP 1: Check for STATISTICAL SUMMARY**
-If the query contains the word "summary" OR asks for comprehensive statistics:
-- Keywords: "summary", "summarize", "statistical summary", "statistics", "stats", "distribution", "overview", "comprehensive"
-- Examples:
-  * "Provide a SUMMARY of temperature" → operation = "summary"
-  * "Give me statistics for Node 15" → operation = "summary"
-  * "Show statistical summary" → operation = "summary"
-  * "What are the stats for humidity" → operation = "summary"
-  * "Comprehensive overview" → operation = "summary"
-- Set: intent_type = "query"
-- Set: operation = "summary"
-- Set: location = "Single Location"
-- Set: aggregation_level = null
-- IMPORTANT: "summary" = FULL STATISTICS (min, max, median, quartiles, std dev, skewness)
-- DO NOT confuse with "daily summary" or "breakdown" - those are aggregation!
+A) THRESHOLD_SCAN — matches when ALL of:
+   • Query asks WHICH or WHERE (not asking about one named node)
+   • Contains a sensor threshold: "exceeded X", "above X", "below X", "over X°"
+   → intent_type = "threshold_scan"
+   → location = "{available_locations[0] if available_locations else 'Node 1'}"  ← MUST be exactly ONE valid location string, NOT a list, NOT multiple nodes
+   → operation = "mean"  ← placeholder
+   → aggregation_level = null
+   → threshold_value = the numeric sensor value (e.g. 25.0)
+   → threshold_operator: "exceeded/above/over/more than" → ">"  |  "below/under/less than" → "<"
+   → result_threshold = secondary % cutoff if stated (e.g. "more than 50% of the time" → 50.0), else 0.0
+   EXAMPLES:
+     "Which nodes exceeded 25°C more than 50% of the time?" → threshold_scan, threshold_value=25.0, threshold_operator=">", result_threshold=50.0
+     "Where did humidity go above 60% for over 30% of last week?" → threshold_scan, threshold_value=60.0, threshold_operator=">", result_threshold=30.0
 
-**STEP 2: Check for COMPARISON**
-If the query mentions TWO OR MORE locations OR uses comparison words:
-- Keywords: "compare", "vs", "versus", "between", "difference between", "which"
-- Examples: 
-  * "Compare Node 14 and Node 15" → comparison
-  * "Temperature between Node 11 vs Node 15" → comparison
-  * "Which is warmer, Node 1 or Node 2" → comparison
-- Set: intent_type = "comparison"
-- Set: location = ["Location1", "Location2"]
-- Set: aggregation_level = null
+B) SUMMARY — matches when ANY of these words appear in the query (REGARDLESS of other words):
+   "summary", "summarize", "statistics", "stats", "distribution", "overview"
+   → intent_type = "query"
+   → operation = "summary"
+   → aggregation_level = null
+   → location = the named node (single string)
+   !! THIS RULE IS ABSOLUTE. If "summary", "statistics", "stats", "overview", or "distribution"
+      appear anywhere in the query, set operation="summary" and intent_type="query". No exceptions. !!
+   EXAMPLES:
+     "Provide a summary of moisture in Node 15 last month" → query, operation=summary
+     "Give me statistics for Node 4" → query, operation=summary
+     "What are the stats for humidity in Node 8 last week?" → query, operation=summary
+     "Overview of temperature in Node 1" → query, operation=summary
 
-**STEP 3: Check for AGGREGATION**
-If the query asks for time-grouped/broken-down data (NOT just a range):
-- Keywords: "each day", "daily breakdown", "hourly", "weekly", "by day", "by hour", "per day", "day by day", "every day"
-- IMPORTANT: Must explicitly request time grouping (e.g., "EACH day", "BY hour")
-- Examples:
-  * "Temperature EACH DAY last week" → aggregation (daily)
-  * "Show HOURLY averages" → aggregation (hourly)
-  * "Daily BREAKDOWN of humidity" → aggregation (daily)
-  * "What was temperature EACH day" → aggregation (daily)
-  * "Give me BY DAY averages" → aggregation (daily)
-- Set: intent_type = "aggregation"
-- Set: location = "Single Location"
-- Set: aggregation_level = "hourly" | "daily" | "weekly"
-- NOTE: "summary" alone is NOT aggregation - it needs explicit time grouping words
+C) AGGREGATION — matches when query explicitly requests time-grouped output AND rule B did not match:
+   Required signal words (at least one must be present):
+     "each day", "each hour", "each week", "daily breakdown",
+     "by day", "by hour", "per day", "hourly", "day by day", "every day"
+   → intent_type = "aggregation"
+   → aggregation_level:
+       "each day" / "daily" / "by day" / "per day" / "day by day" / "every day" → "daily"
+       "each hour" / "hourly" / "by hour" → "hourly"
+       "each week" / "weekly" / "by week" → "weekly"
+   → location = the named node (single string)
+   EXAMPLES:
+     "What was the temperature each day in Node 1 last week?" → aggregation, daily
+     "Show me hourly humidity in Node 4 yesterday" → aggregation, hourly
+     "Daily breakdown of moisture in Node 15" → aggregation, daily
+     "Temperature in Node 8 every day last month" → aggregation, daily
+   NOT aggregation (no time-grouping signal words → use rule E instead):
+     "What was the highest moisture level over the past year?" → query, max
+     "Maximum temperature last month in Node 4" → query, max
+     "What was the temperature in Node 1 last week?" → query, mean
 
-**STEP 4: DEFAULT to QUERY**
-Simple single-value statistic over a time period:
-- Examples:
-  * "Average temperature last week" → query (operation = "mean")
-  * "Max humidity yesterday" → query (operation = "max")
-  * "Temperature in Node 15 last week" → query (operation = "mean")
-- Set: intent_type = "query"
-- Set: location = "Single Location"  // MUST be a string
-- Set: aggregation_level = null
-- Set: operation based on keywords:
-  * "average", "avg" → operation = "mean"
-  * "maximum", "max", "highest" → operation = "max"
-  * "minimum", "min", "lowest" → operation = "min"
-  * Default (no specific keyword) → operation = "mean"
+D) COMPARISON — matches when query names TWO OR MORE locations, or uses "compare/vs/versus":
+   → intent_type = "comparison"
+   → location = list of location strings, e.g. ["Node 15", "Node 25"]
+   → aggregation_level = null
+   EXAMPLES:
+     "Compare humidity between Node 15 and Node 25" → comparison, ["Node 15","Node 25"]
+     "Temperature in Node 1 vs Node 8 last week" → comparison, ["Node 1","Node 8"]
 
-CRITICAL VALIDATION:
-- comparison → location MUST be a list with 2+ items, aggregation_level = null
-- aggregation → location MUST be a string, aggregation_level MUST be "hourly"|"daily"|"weekly"
-  * REQUIRES explicit time grouping words: "each day", "by hour", "daily breakdown"
-  * "summary" alone is NOT aggregation
-- query with operation="summary" → location MUST be a string, aggregation_level = null
-  * Triggered by "summary", "statistics", "stats" keywords
-  * Returns comprehensive statistics (NOT time-grouped data)
-- query (other operations) → location MUST be a string, aggregation_level = null
+E) QUERY (default) — everything else:
+   → intent_type = "query"
+   → aggregation_level = null
+   → operation: "average/avg" → "mean" | "maximum/max/highest" → "max" | "minimum/min/lowest" → "min" | default → "mean"
+   EXAMPLES:
+     "What was the average temperature in Node 15 yesterday?" → query, mean
+     "Max humidity in Node 4 last week" → query, max
+     "What was the temperature in Node 1 last month?" → query, mean
 
-KEYWORD PRIORITY:
-1. "summary" OR "statistics" → ALWAYS operation = "summary" (NEVER aggregation)
-2. "each day" OR "daily breakdown" OR "by hour" → aggregation
-3. "compare" OR "vs" → comparison
-4. "average" OR "max" OR "min" → query with that operation
+════════════════════════════════════════
+DATE RULES
+════════════════════════════════════════
+- "yesterday"   → {(current_date - timedelta(days=1)).strftime('%Y-%m-%d')}T00:00:00+00:00 to {(current_date - timedelta(days=1)).strftime('%Y-%m-%d')}T23:59:59+00:00
+- "last week"   → {(current_date - timedelta(days=7)).strftime('%Y-%m-%d')}T00:00:00+00:00 to {current_date.strftime('%Y-%m-%d')}T23:59:59+00:00
+- "last month"  → {(current_date - timedelta(days=30)).strftime('%Y-%m-%d')}T00:00:00+00:00 to {current_date.strftime('%Y-%m-%d')}T23:59:59+00:00
+- "past year"   → {(current_date - timedelta(days=365)).strftime('%Y-%m-%d')}T00:00:00+00:00 to {current_date.strftime('%Y-%m-%d')}T23:59:59+00:00
+- Named month (e.g. "June 2025") → first day T00:00:00+00:00 to last day T23:59:59+00:00
+- Always include timezone offset (+00:00)
 
-DATE PARSING RULES:
-- "yesterday" = previous day from current date (e.g., {(current_date - timedelta(days=1)).strftime('%Y-%m-%d')})
-- "last week" = past 7 days from current date (e.g., {(current_date - timedelta(days=7)).strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')})
-- "past month" = past 30 days from current date (e.g., {(current_date - timedelta(days=30)).strftime('%Y-%m-%d')} to {current_date.strftime('%Y-%m-%d')})
-- Always use {current_date.year} as the year for recent dates unless explicitly stated otherwise
-- All times should be in ISO 8601 format with timezone (use 'T00:00:00+00:00' for start of day, 'T23:59:59+00:00' for end of day)
+════════════════════════════════════════
+FIELD RULES
+════════════════════════════════════════
+- threshold_scan : threshold_value and threshold_operator REQUIRED; result_threshold = 0.0 if not stated
+- comparison     : location MUST be a JSON array with 2+ strings
+- aggregation    : location MUST be a single string; aggregation_level MUST be "hourly"|"daily"|"weekly"
+- query/summary  : location MUST be a single string; aggregation_level = null
+- Non-threshold_scan: threshold_value = null, threshold_operator = null, result_threshold = null
 
 Return ONLY the JSON object.
 """
@@ -203,11 +211,29 @@ Provide a clear, concise natural language explanation of the results.
 GUIDELINES:
 1. Directly answer the user's question
 2. Include the numerical result with units
-3. Add relevant context (sample size, time range)
+3. Add relevant context (time range from actual_time_range). Do NOT describe the
+   number of days or periods as a "sample size" for aggregation results — the
+   date range already conveys this.
+   IMPORTANT: Use "actual_time_range" from the results for ANY date/time references.
+   Do NOT use start_time/end_time from the task specification — the actual data may
+   cover a shorter period than what was requested (e.g. sensor data may have stopped early).
 4. Mention any data quality notes if present
 5. Keep response to 2-3 sentences
 6. Do NOT hallucinate or add information not in the results
 7. Use natural, conversational language
+
+RESULT TYPE RULES — vary your response based on what "value" contains:
+- Scalar (single number): state the value and units. For max/min operations, if
+  "extreme_timestamp" is present at the TOP LEVEL of the result (not inside metadata),
+  use it to state when the extreme occurred. Do NOT use actual_time_range end date as
+  a substitute. If extreme_timestamp is null or absent, do NOT invent or guess a date.
+- If "formatted_aggregation" is present in the results: copy it VERBATIM into your
+  response, one entry per line. Do NOT summarize, average, or reformat it.
+- List of {{timestamp, value}} objects (aggregation): present EACH period on its own line
+  as "- [date]: [value] [unit]". Do NOT average them into a single number.
+- Dict (summary statistics): report mean, min, max, std, and median.
+- List of {{location, percent_time}} objects (threshold scan): list each qualifying
+  location and its percent_time value.
 
 Now explain the results above:
 """

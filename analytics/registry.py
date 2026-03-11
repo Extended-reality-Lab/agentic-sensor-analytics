@@ -8,7 +8,9 @@ from .tools import (
     TemporalMeanTool,
     TemporalAggregationTool,
     SpatialComparisonTool,
-    StatisticalSummaryTool
+    StatisticalSummaryTool,
+    ThresholdScanTool,
+    ResultFilterTool,
 )
 
 
@@ -26,6 +28,8 @@ class ToolRegistry:
         self.register(TemporalAggregationTool())
         self.register(SpatialComparisonTool())
         self.register(StatisticalSummaryTool())
+        self.register(ThresholdScanTool())
+        self.register(ResultFilterTool())
     
     def register(self, tool: AnalyticsTool) -> None:
         """

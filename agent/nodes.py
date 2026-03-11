@@ -126,7 +126,7 @@ class AgentNodes:
                 return state
 
             context_dict = self.bridge.get_system_context()
-            
+
             # Validate using bridge
             errors = TaskSpecificationParser.validate_against_context(
                 task_spec=task_spec,
@@ -134,6 +134,9 @@ class AgentNodes:
                 available_locations=context_dict['available_locations'],
                 time_range=context_dict['time_range']
             )
+
+            if task_spec.intent_type.value == 'threshold_scan':
+                errors = [e for e in errors if 'location' not in e.lower()]
             state['validation_errors'] = errors
             
             duration_ms = (time.time() - start_time) * 1000
@@ -254,6 +257,43 @@ class AgentNodes:
                 tool = self.registry.get_tool('spatial_comparison')
             elif task_spec.operation.value == 'summary':
                 tool = self.registry.get_tool('statistical_summary')
+            elif task_spec.intent_type.value == 'threshold_scan':
+                # Step 1: compute percent_time per location
+                scan_tool = self.registry.get_tool('threshold_scan')
+                scan_result = scan_tool.execute(
+                    data,
+                    threshold_value=task_spec.threshold_value,
+                    threshold_operator=task_spec.threshold_operator or '>',
+                )
+                if not scan_result.success:
+                    state['validation_errors'] = [scan_result.error_message]
+                    add_trace_entry(state, 'execute_analytics', 'failed', {
+                        'error': scan_result.error_message, 'tool': 'threshold_scan'
+                    }, (time.time() - start_time) * 1000)
+                    return state
+
+                # Step 2: filter locations by secondary result_threshold
+                filter_tool = self.registry.get_tool('result_filter')
+                result = filter_tool.execute(
+                    data,
+                    scan_results=scan_result.metadata['scan_results'],
+                    result_threshold=task_spec.result_threshold or 0.0,
+                    threshold_operator=task_spec.threshold_operator or '>',
+                )
+                if not result.success:
+                    state['validation_errors'] = [result.error_message]
+                    add_trace_entry(state, 'execute_analytics', 'failed', {
+                        'error': result.error_message, 'tool': 'result_filter'
+                    }, (time.time() - start_time) * 1000)
+                    return state
+
+                state['analytics_result'] = result.model_dump()
+                add_trace_entry(state, 'execute_analytics', 'completed', {
+                    'tool': 'threshold_scan → result_filter',
+                    'num_locations_scanned': scan_result.metadata['num_locations_scanned'],
+                    'num_qualifying': result.metadata['num_qualifying'],
+                }, (time.time() - start_time) * 1000)
+                return state
             else:
                 tool = self.registry.get_tool('temporal_mean')
             
@@ -328,23 +368,43 @@ class AgentNodes:
                 raise ValueError("No analytics result to explain")
             
             # Create a cleaned summary for the LLM (remove verbose data like time_series)
+            # Capture actual retrieved time range — may differ from requested range
+            data = state.get('data')
+            actual_time_range = None
+            if data is not None and not data.empty and 'timestamp' in data.columns:
+                actual_time_range = {
+                    'start': data['timestamp'].min().strftime('%B %d, %Y'),
+                    'end': data['timestamp'].max().strftime('%B %d, %Y')
+                }
+
+            # Promote extreme_timestamp to top level so the LLM cannot miss it
+            original_metadata = analytics_result.get('metadata', {})
             result_summary = {
                 'value': analytics_result.get('value'),
                 'unit': analytics_result.get('unit'),
                 'success': analytics_result.get('success'),
                 'execution_time_ms': analytics_result.get('execution_time_ms'),
+                'actual_time_range': actual_time_range,
+                'extreme_timestamp': original_metadata.get('extreme_timestamp'),
                 'metadata': {}
             }
-            
-            # Add only essential metadata (not the full time_series/aggregated_data)
-            original_metadata = analytics_result.get('metadata', {})
             essential_keys = ['operation', 'sample_size', 'std_dev', 'min', 'max', 
                             'num_periods', 'overall_aggregate', 'aggregation_level',
-                            'num_locations', 'count', 'mean', 'median', 'skewness', 'kurtosis']
+                            'num_locations', 'count', 'mean', 'median', 'skewness', 'kurtosis',
+                            'threshold_value', 'threshold_operator', 'result_threshold',
+                            'num_qualifying', 'num_scanned', 'extreme_timestamp']
             
             for key in essential_keys:
                 if key in original_metadata:
                     result_summary['metadata'][key] = original_metadata[key]
+
+            # Pre-format aggregation results so the LLM cannot collapse them into a single number
+            if (task_spec.intent_type.value == 'aggregation' and
+                    isinstance(analytics_result.get('value'), list)):
+                result_summary['formatted_aggregation'] = "\n".join(
+                    f"  - {entry['timestamp'][:10]}: {round(entry['value'], 2)} {analytics_result.get('unit', '')}"
+                    for entry in analytics_result['value']
+                )
             
             # Generate explanation using LLM
             if stream:

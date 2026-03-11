@@ -52,6 +52,9 @@ class LLMDataBridge:
         
         elif task_spec.intent_type == IntentType.AGGREGATION:
             return self._execute_aggregation(task_spec)
+
+        elif task_spec.intent_type == IntentType.THRESHOLD_SCAN:
+            return self._execute_scan(task_spec)
         
         else:
             raise ValueError(f"Unknown intent type: {task_spec.intent_type}")
@@ -120,6 +123,32 @@ class LLMDataBridge:
             end_time=task_spec.end_time
         )
         
+        return df
+
+    def _execute_scan(self, task_spec: TaskSpecification) -> pd.DataFrame:
+        """
+        Execute threshold scan across all available locations.
+        Fetches data for every location that carries the requested sensor type.
+
+        Args:
+            task_spec: TaskSpecification with intent_type=THRESHOLD_SCAN
+
+        Returns:
+            DataFrame with readings from all locations (has 'location' column)
+        """
+        sensors_by_node = self.repository.get_sensors_by_node()
+        locations = [
+            loc for loc, sensors in sensors_by_node.items()
+            if task_spec.sensor_type in sensors
+        ]
+
+        df = self.repository.get_readings_multiple_locations(
+            sensor_type=task_spec.sensor_type,
+            locations=locations,
+            start_time=task_spec.start_time,
+            end_time=task_spec.end_time
+        )
+
         return df
     
     def get_system_context(self) -> Dict:
