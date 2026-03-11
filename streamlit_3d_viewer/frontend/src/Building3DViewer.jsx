@@ -18,7 +18,7 @@ export default function Building3DViewer({
         {/* Camera setup */}
         <PerspectiveCamera 
           makeDefault 
-          position={[0, 30, 80]}
+          position={[0, 30, 40]}
           fov={75}
         />
         
