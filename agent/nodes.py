@@ -255,8 +255,6 @@ class AgentNodes:
                 tool = self.registry.get_tool('temporal_aggregation')
             elif task_spec.intent_type.value == 'comparison':
                 tool = self.registry.get_tool('spatial_comparison')
-            elif task_spec.operation.value == 'summary':
-                tool = self.registry.get_tool('statistical_summary')
             elif task_spec.intent_type.value == 'threshold':
                 # Step 1: compute percent_time per location
                 scan_tool = self.registry.get_tool('threshold')
@@ -294,6 +292,8 @@ class AgentNodes:
                     'num_qualifying': result.metadata['num_qualifying'],
                 }, (time.time() - start_time) * 1000)
                 return state
+            elif task_spec.operation.value == 'summary':
+                tool = self.registry.get_tool('statistical_summary')
             else:
                 tool = self.registry.get_tool('temporal_mean')
             

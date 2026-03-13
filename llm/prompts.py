@@ -75,8 +75,10 @@ Extract the following information and return ONLY valid JSON (no markdown, no ex
 "location": "<single location string OR list of locations for comparison>",
 "start_time": "<ISO 8601 datetime>",
 "end_time": "<ISO 8601 datetime>",
-"operation": "<mean|max|min|sum|std|count|summary>",
+"operation": "<mean|max|min|sum|std|count|summary|null>",
 "aggregation_level": "<hourly|daily|weekly|null>",
+"threshold_value": <numeric value or null>,
+"threshold_operator": "<>|>=|<|<=|null>",
 "confidence": <0.0-1.0 confidence score>
 }}
 
@@ -133,6 +135,7 @@ If the query asks which locations exceed or fall below a numeric value for some 
   * "Locations below 10°C more than half the time" → threshold
   * "Where was strain over 500 for any period?" → threshold
 - Set: intent_type = "threshold"
+- Set: operation = null
 - Set: location = list of ALL available locations (scan across all nodes)
 - Set: threshold_value = the numeric value extracted from the query
 - Set: threshold_operator = ">", ">=", "<", or "<=" based on the query wording
